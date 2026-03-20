@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contract Management System — Sign In</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
+</head>
+<body class="auth-body">
+<div class="auth-split">
+  <div class="auth-left">
+    <div class="brand">
+      <div class="brand-icon">◈</div>
+      <div class="brand-text">
+        <div class="brand-name">ContractIQ</div>
+        <div class="brand-sub">Contract Management System</div>
+      </div>
+    </div>
+    <div class="auth-hero">
+      <h1>Manage contracts<br><em>with confidence.</em></h1>
+      <p>AI-powered analysis, automated reminders, and digital certificates — all in one platform.</p>
+      <div class="feature-list">
+        <div class="feature-item"><span class="fi-icon">⚡</span> AI contract risk analysis</div>
+        <div class="feature-item"><span class="fi-icon">📱</span> SMS + email reminders every Friday</div>
+        <div class="feature-item"><span class="fi-icon">🔐</span> PKI digital certificates</div>
+        <div class="feature-item"><span class="fi-icon">📊</span> PowerBI live dashboards</div>
+      </div>
+    </div>
+    <div class="mtls-status" id="mtlsStatus">
+      <span class="mtls-dot"></span>
+      <span id="mtlsLabel">Checking certificate…</span>
+    </div>
+  </div>
+
+  <div class="auth-right">
+    <div class="auth-form-wrap">
+      <h2>Welcome back</h2>
+      <p class="form-sub">Sign in to your account</p>
+
+      {% if request.args.get('verified') %}
+      <div class="alert alert-success">Email verified! You can now sign in.</div>
+      {% endif %}
+      {% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
+      <div class="alert alert-error hidden" id="formError"></div>
+
+      <form id="loginForm" novalidate>
+        <div class="field">
+          <label>Email address</label>
+          <input type="email" id="email" name="email" placeholder="you@company.com"
+                 autocomplete="email" required>
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <div class="input-suffix">
+            <input type="password" id="password" name="password"
+                   placeholder="••••••••" autocomplete="current-password" required>
+            <button type="button" class="suffix-btn" id="pwToggle">Show</button>
+          </div>
+        </div>
+        <div class="field-row">
+          <label class="check-label">
+            <input type="checkbox" id="remember"> Remember me
+          </label>
+          <a href="{{ url_for('auth.forgot_password') }}" class="link-sm">Forgot password?</a>
+        </div>
+        <button type="submit" class="btn-submit" id="loginBtn">
+          <span id="btnTxt">Sign In</span>
+          <span class="btn-spinner hidden" id="btnSpin"></span>
+        </button>
+      </form>
+
+      <div class="divider"><span>or</span></div>
+      <div class="cert-login" id="certLoginRow">
+        <button class="btn-cert" id="certLoginBtn">
+          <span>🔐</span> Sign in with Digital Certificate
+        </button>
+      </div>
+
+      <p class="auth-link">Don't have an account?
+        <a href="{{ url_for('auth.signup') }}">Create one</a>
+      </p>
+    </div>
+  </div>
+</div>
+<script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+</body>
+</html>

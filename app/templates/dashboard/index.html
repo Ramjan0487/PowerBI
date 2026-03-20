@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ContractIQ — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+{% include 'dashboard/nav.html' %}
+
+<div class="page">
+  <div class="page-header">
+    <div>
+      <h1>Dashboard</h1>
+      <p class="page-sub">Live contract portfolio overview</p>
+    </div>
+    <div class="header-actions">
+      <span class="live-badge"><span class="live-dot"></span>Live</span>
+      <a href="{{ url_for('contracts.new_contract') }}" class="btn btn-primary">+ New Contract</a>
+    </div>
+  </div>
+
+  <!-- KPI cards -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-icon" style="background:#eff6ff">📄</div>
+      <div class="kpi-body">
+        <div class="kpi-val" id="kpiTotal">—</div>
+        <div class="kpi-label">Total contracts</div>
+      </div>
+    </div>
+    <div class="kpi-card kpi-green">
+      <div class="kpi-icon" style="background:#f0fdf4">✅</div>
+      <div class="kpi-body">
+        <div class="kpi-val" id="kpiActive">—</div>
+        <div class="kpi-label">Active</div>
+      </div>
+    </div>
+    <div class="kpi-card kpi-amber">
+      <div class="kpi-icon" style="background:#fffbeb">⏰</div>
+      <div class="kpi-body">
+        <div class="kpi-val" id="kpiExp30">—</div>
+        <div class="kpi-label">Expiring ≤ 30 days</div>
+      </div>
+    </div>
+    <div class="kpi-card kpi-red">
+      <div class="kpi-icon" style="background:#fef2f2">🚨</div>
+      <div class="kpi-body">
+        <div class="kpi-val" id="kpiExp90">—</div>
+        <div class="kpi-label">Expiring ≤ 90 days</div>
+      </div>
+    </div>
+    <div class="kpi-card kpi-blue">
+      <div class="kpi-icon" style="background:#eff6ff">💰</div>
+      <div class="kpi-body">
+        <div class="kpi-val" id="kpiValue">—</div>
+        <div class="kpi-label">Total portfolio value</div>
+      </div>
+    </div>
+    <div class="kpi-card kpi-purple">
+      <div class="kpi-icon" style="background:#faf5ff">📨</div>
+      <div class="kpi-body">
+        <div class="kpi-val" id="kpiSms">—</div>
+        <div class="kpi-label">SMS sent today</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts row -->
+  <div class="charts-row">
+    <div class="chart-card">
+      <div class="chart-title">Contracts by type</div>
+      <canvas id="typeChart" height="200"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Risk distribution</div>
+      <canvas id="riskChart" height="200"></canvas>
+    </div>
+    <div class="chart-card chart-wide">
+      <div class="chart-title">Monthly contracts created (12 months)</div>
+      <canvas id="trendChart" height="120"></canvas>
+    </div>
+  </div>
+
+  <!-- PowerBI embed -->
+  <div class="section-card">
+    <div class="section-header">
+      <div class="section-title">PowerBI Reports</div>
+      <button class="btn btn-ghost btn-sm" id="loadPBIBtn" onclick="loadPowerBI()">Load Report</button>
+    </div>
+    <div id="pbiContainer" class="pbi-placeholder">
+      <div class="pbi-icon">📊</div>
+      <div class="pbi-msg">Click "Load Report" to embed your PowerBI dashboard</div>
+      <div class="pbi-sub">Configure POWERBI_* environment variables to enable live reports</div>
+    </div>
+  </div>
+
+  <!-- Bottom row -->
+  <div class="bottom-row">
+    <div class="table-card">
+      <div class="section-title">Expiring contracts (next 30 days)</div>
+      <table class="data-table" id="expiringTable">
+        <thead><tr><th>Contract</th><th>Counterparty</th><th>Expires</th><th>Days</th><th>Risk</th><th></th></tr></thead>
+        <tbody id="expiringTbody"><tr><td colspan="6" class="loading-row">Loading…</td></tr></tbody>
+      </table>
+    </div>
+    <div class="activity-card">
+      <div class="section-title">Activity feed</div>
+      <div id="activityFeed" class="activity-feed">Loading…</div>
+    </div>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+<script>
+// PowerBI embed
+async function loadPowerBI() {
+  const container = document.getElementById('pbiContainer');
+  container.innerHTML = '<div class="pbi-icon">⏳</div><div class="pbi-msg">Loading PowerBI…</div>';
+  try {
+    const res  = await fetch('/dashboard/api/powerbi-token');
+    const data = await res.json();
+    if (data.demo) {
+      container.innerHTML = `<iframe src="https://app.powerbi.com/reportEmbed?reportId=demo"
+        style="width:100%;height:500px;border:none;border-radius:8px"
+        title="PowerBI Report (demo mode)"></iframe>
+        <p style="font-size:12px;color:#94a3b8;margin-top:8px;text-align:center">Configure POWERBI_* env vars for live data</p>`;
+      return;
+    }
+    container.innerHTML = `<iframe src="${data.embed_url}?rs:embed=true&accessToken=${data.token}"
+      style="width:100%;height:540px;border:none;border-radius:8px"
+      title="PowerBI Report" allowfullscreen></iframe>`;
+  } catch(e) {
+    container.innerHTML = `<div class="pbi-icon">⚠️</div><div class="pbi-msg">Failed to load: ${e.message}</div>`;
+  }
+}
+</script>
+</body></html>

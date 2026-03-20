@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ContractIQ — Create Account</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
+</head>
+<body class="auth-body">
+<div class="auth-split">
+  <div class="auth-left">
+    <div class="brand">
+      <div class="brand-icon">◈</div>
+      <div class="brand-text">
+        <div class="brand-name">ContractIQ</div>
+        <div class="brand-sub">Contract Management System</div>
+      </div>
+    </div>
+    <div class="auth-hero">
+      <h1>Start managing<br><em>smarter today.</em></h1>
+      <p>Join teams who never miss a contract expiry again.</p>
+    </div>
+  </div>
+  <div class="auth-right">
+    <div class="auth-form-wrap">
+      <h2>Create account</h2>
+      <p class="form-sub">Get started — it's free</p>
+
+      <div class="alert alert-error hidden" id="formError"></div>
+      <div class="alert alert-success hidden" id="formSuccess"></div>
+
+      <form id="signupForm" novalidate>
+        <div class="field-row-2">
+          <div class="field">
+            <label>Full name *</label>
+            <input type="text" id="full_name" name="full_name" placeholder="Jane Smith" required>
+          </div>
+          <div class="field">
+            <label>Department</label>
+            <input type="text" id="department" name="department" placeholder="Legal / Finance">
+          </div>
+        </div>
+        <div class="field">
+          <label>Email address *</label>
+          <input type="email" id="email" name="email" placeholder="you@company.com" required>
+        </div>
+        <div class="field">
+          <label>Phone number <span class="hint">(for SMS reminders)</span></label>
+          <input type="tel" id="phone" name="phone" placeholder="+250 788 000 000">
+        </div>
+        <div class="field">
+          <label>Password *</label>
+          <div class="input-suffix">
+            <input type="password" id="password" name="password"
+                   placeholder="Min 8 characters" minlength="8" required>
+            <button type="button" class="suffix-btn" id="pwToggle">Show</button>
+          </div>
+          <div class="pw-strength" id="pwStrength"></div>
+        </div>
+        <div class="field">
+          <label class="check-label" style="margin-top:4px">
+            <input type="checkbox" id="sms_opt" name="sms_opt" checked>
+            Receive SMS reminders for expiring contracts
+          </label>
+        </div>
+        <button type="submit" class="btn-submit" id="signupBtn">
+          <span id="btnTxt">Create Account</span>
+          <span class="btn-spinner hidden" id="btnSpin"></span>
+        </button>
+      </form>
+      <p class="auth-link">Already have an account?
+        <a href="{{ url_for('auth.login') }}">Sign in</a>
+      </p>
+    </div>
+  </div>
+</div>
+<script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+<script>
+document.getElementById('signupForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('signupBtn');
+  document.getElementById('btnTxt').textContent = 'Creating account…';
+  document.getElementById('btnSpin').classList.remove('hidden');
+  btn.disabled = true;
+  const formData = new FormData(e.target);
+  const data = Object.fromEntries(formData.entries());
+  data.sms_opt_in = !!formData.get('sms_opt');
+  try {
+    const res = await fetch('/auth/signup', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(data)
+    });
+    const json = await res.json();
+    if (res.ok) {
+      document.getElementById('formSuccess').textContent = json.message;
+      document.getElementById('formSuccess').classList.remove('hidden');
+      document.getElementById('signupForm').style.opacity = '0.4';
+    } else {
+      document.getElementById('formError').textContent = json.message;
+      document.getElementById('formError').classList.remove('hidden');
+    }
+  } catch { document.getElementById('formError').textContent = 'Network error'; document.getElementById('formError').classList.remove('hidden'); }
+  finally { document.getElementById('btnTxt').textContent='Create Account'; document.getElementById('btnSpin').classList.add('hidden'); btn.disabled=false; }
+});
+// Password strength indicator
+document.getElementById('password').addEventListener('input', function() {
+  const v = this.value;
+  const el = document.getElementById('pwStrength');
+  let score = 0;
+  if (v.length >= 8)  score++;
+  if (/[A-Z]/.test(v)) score++;
+  if (/[0-9]/.test(v)) score++;
+  if (/[^A-Za-z0-9]/.test(v)) score++;
+  const labels = ['', 'Weak', 'Fair', 'Good', 'Strong'];
+  const colors = ['', '#ef4444', '#f97316', '#eab308', '#22c55e'];
+  el.textContent = v.length ? `Strength: ${labels[score]}` : '';
+  el.style.color = colors[score];
+});
+</script>
+</body></html>

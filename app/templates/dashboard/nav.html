@@ -1,0 +1,17 @@
+<nav class="topnav">
+  <div class="nav-brand">
+    <span class="nav-logo">◈</span>
+    <span class="nav-name">ContractIQ</span>
+  </div>
+  <div class="nav-links">
+    <a href="{{ url_for('dashboard.index') }}"   class="nav-link {% if request.endpoint=='dashboard.index' %}active{% endif %}">Dashboard</a>
+    <a href="{{ url_for('contracts.index') }}"   class="nav-link {% if 'contracts' in request.endpoint %}active{% endif %}">Contracts</a>
+    <a href="/api/v1/contracts"                  class="nav-link">API</a>
+  </div>
+  <div class="nav-right">
+    <span class="nav-user">{{ user.full_name if user else '' }}</span>
+    <form action="{{ url_for('auth.logout') }}" method="POST" style="display:inline">
+      <button class="btn btn-ghost btn-sm">Sign out</button>
+    </form>
+  </div>
+</nav>
