@@ -7,7 +7,7 @@
 ## Quick Start
 
 ```bash
-git clone https://github.com/your-org/contract-mgmt.git && cd contract-mgmt
+git clone https://github.com/Ramjan0487/Contract_Management.git && cd contract-mgmt
 cp .env.example .env          # fill in credentials
 bash scripts/gen_certs.sh     # generate PKI chain
 docker compose up -d          # start all 7 services
