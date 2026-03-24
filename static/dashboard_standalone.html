@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CMS Pro — Contract Management Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root {
+  --bg:       #0b0d12;
+  --panel:    #111318;
+  --panel2:   #181b22;
+  --border:   rgba(255,255,255,.07);
+  --border2:  rgba(255,255,255,.12);
+  --text:     #e8eaf0;
+  --muted:    #6b7280;
+  --muted2:   #9ca3af;
+  --green:    #22c55e;
+  --green-d:  #15803d;
+  --amber:    #f59e0b;
+  --red:      #ef4444;
+  --blue:     #3b82f6;
+  --cyan:     #06b6d4;
+  --purple:   #a855f7;
+  --nav:      220px;
+  --r:        10px;
+  --r2:       14px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Bricolage Grotesque',sans-serif;background:var(--bg);color:var(--text);font-size:14px;display:flex;min-height:100vh;overflow-x:hidden}
+
+/* ── Noise texture overlay ── */
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;opacity:.4}
+
+/* ── SIDEBAR ── */
+.sidebar{width:var(--nav);background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100}
+.logo{padding:22px 18px 18px;border-bottom:1px solid var(--border)}
+.logo-mark{display:flex;align-items:center;gap:10px}
+.logo-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--green),var(--cyan));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px}
+.logo-text{font-size:15px;font-weight:800;letter-spacing:-.3px;line-height:1}
+.logo-sub{font-size:10px;color:var(--muted);margin-top:3px;letter-spacing:.5px;text-transform:uppercase}
+.live-dot{display:inline-block;width:6px;height:6px;background:var(--green);border-radius:50%;margin-right:5px;animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(34,197,94,.4)}50%{opacity:.5;box-shadow:0 0 0 4px rgba(34,197,94,0)}}
+
+nav{flex:1;padding:14px 0;overflow-y:auto}
+.nav-group{padding:10px 16px 4px;font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);font-weight:600}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 16px;color:var(--muted2);font-size:13px;font-weight:400;cursor:pointer;border-left:2px solid transparent;transition:all .15s;user-select:none;text-decoration:none}
+.nav-item:hover{color:var(--text);background:rgba(255,255,255,.04);border-left-color:var(--border2)}
+.nav-item.active{color:var(--text);background:rgba(34,197,94,.08);border-left-color:var(--green);font-weight:500}
+.nav-item .ico{font-size:15px;width:18px;text-align:center}
+.nav-badge{margin-left:auto;background:var(--red);color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:8px}
+.sidebar-foot{padding:14px 16px;border-top:1px solid var(--border);font-size:11px;color:var(--muted)}
+
+/* ── MAIN ── */
+.main{margin-left:var(--nav);flex:1;display:flex;flex-direction:column}
+.topbar{background:var(--panel);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;backdrop-filter:blur(8px)}
+.topbar-left{display:flex;align-items:center;gap:14px}
+.page-tag{background:rgba(34,197,94,.12);color:var(--green);font-size:11px;font-weight:700;padding:3px 9px;border-radius:6px;letter-spacing:.3px}
+.topbar-title{font-size:16px;font-weight:700;letter-spacing:-.2px}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.ts{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);background:var(--panel2);padding:4px 10px;border-radius:6px;border:1px solid var(--border)}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border2);background:transparent;color:var(--text);font-family:'Bricolage Grotesque',sans-serif;transition:all .15s;white-space:nowrap}
+.btn:hover{background:rgba(255,255,255,.07)}
+.btn-g{background:var(--green);color:#000;border-color:var(--green)}
+.btn-g:hover{background:#16a34a}
+.btn-sm{padding:5px 10px;font-size:11px}
+
+/* ── VIEWS ── */
+.view{display:none;padding:22px 24px;flex:1;animation:fadeIn .2s ease}
+.view.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── KPI GRID ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px}
+.kpi{background:var(--panel);border:1px solid var(--border);border-radius:var(--r2);padding:16px;position:relative;overflow:hidden;transition:transform .2s,border-color .2s}
+.kpi:hover{transform:translateY(-2px);border-color:var(--border2)}
+.kpi::after{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.kpi.g::after{background:linear-gradient(90deg,var(--green),var(--cyan))}
+.kpi.b::after{background:linear-gradient(90deg,var(--blue),var(--purple))}
+.kpi.a::after{background:linear-gradient(90deg,var(--amber),#f97316)}
+.kpi.r::after{background:linear-gradient(90deg,var(--red),#ec4899)}
+.kpi.c::after{background:linear-gradient(90deg,var(--cyan),var(--blue))}
+.kpi-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;font-weight:600;margin-bottom:6px}
+.kpi-val{font-size:26px;font-weight:800;letter-spacing:-1px;line-height:1}
+.kpi-sub{font-size:11px;color:var(--muted2);margin-top:4px}
+.kpi-ico{position:absolute;right:14px;top:14px;font-size:22px;opacity:.18}
+
+/* ── CHART CARDS ── */
+.row{display:grid;gap:12px;margin-bottom:16px}
+.r-2-1{grid-template-columns:2fr 1fr}
+.r-3{grid-template-columns:1fr 1fr 1fr}
+.r-2{grid-template-columns:1fr 1fr}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:var(--r2);padding:18px;transition:border-color .2s}
+.card:hover{border-color:var(--border2)}
+.card-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px}
+.card-title{font-size:13px;font-weight:700;letter-spacing:-.1px}
+.card-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.chip{font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;letter-spacing:.3px}
+.chip-g{background:rgba(34,197,94,.15);color:var(--green)}
+.chip-b{background:rgba(59,130,246,.15);color:var(--blue)}
+.chip-a{background:rgba(245,158,11,.15);color:var(--amber)}
+canvas{max-height:200px}
+
+/* ── TABLES ── */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+thead tr{border-bottom:1px solid var(--border2)}
+th{padding:9px 12px;text-align:left;font-weight:600;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.6px;white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid var(--border);color:var(--muted2);vertical-align:middle}
+tbody tr:hover td{background:rgba(255,255,255,.03);color:var(--text)}
+tbody tr:last-child td{border-bottom:none}
+code{font-family:'JetBrains Mono',monospace;font-size:11px}
+
+/* ── BADGES ── */
+.badge{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:5px;font-size:10px;font-weight:700;letter-spacing:.2px;white-space:nowrap}
+.bg{background:rgba(34,197,94,.12);color:var(--green)}
+.ba{background:rgba(245,158,11,.12);color:var(--amber)}
+.br{background:rgba(239,68,68,.12);color:var(--red)}
+.bb{background:rgba(59,130,246,.12);color:var(--blue)}
+.bp{background:rgba(168,85,247,.12);color:var(--purple)}
+.bc{background:rgba(6,182,212,.12);color:var(--cyan)}
+.bx{background:rgba(255,255,255,.06);color:var(--muted2)}
+
+/* ── ALERTS PANEL ── */
+.alert-item{display:flex;align-items:center;gap:12px;padding:12px;border-radius:var(--r);border:1px solid var(--border);margin-bottom:8px;transition:border-color .15s}
+.alert-item:hover{border-color:var(--border2)}
+.a-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.a-dot.cr{background:var(--red);animation:blink 1.4s infinite}
+.a-dot.hi{background:var(--amber)}
+.a-dot.me{background:#eab308}
+.a-info{flex:1;min-width:0}
+.a-title{font-size:12.5px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.a-meta{font-size:11px;color:var(--muted);margin-top:2px}
+
+/* ── FLOW DIAGRAMS ── */
+.flow-box-wrap{padding:20px}
+.flow-row{display:flex;align-items:stretch;gap:0;flex-wrap:wrap;justify-content:flex-start;margin-bottom:8px}
+.fnode{padding:8px 12px;border-radius:8px;font-size:11px;font-weight:600;text-align:center;border:1px solid;min-width:80px;max-width:130px;display:flex;align-items:center;justify-content:center;line-height:1.3}
+.fnode.fs{background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.3);color:var(--green)}
+.fnode.fa{background:rgba(59,130,246,.1);border-color:rgba(59,130,246,.3);color:var(--blue)}
+.fnode.fp{background:rgba(168,85,247,.1);border-color:rgba(168,85,247,.3);color:var(--purple)}
+.fnode.fd{background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.3);color:var(--amber)}
+.fnode.fok{background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.3);color:var(--green)}
+.fnode.fno{background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.3);color:var(--red)}
+.fnode.fe{background:rgba(107,114,128,.1);border-color:rgba(107,114,128,.3);color:var(--muted2)}
+.farrow{display:flex;align-items:center;padding:0 4px;color:var(--muted);font-size:14px}
+
+/* ── TC CARDS ── */
+.tc-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.tc-card{background:var(--panel);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden;transition:border-color .2s}
+.tc-card:hover{border-color:var(--border2)}
+.tc-top{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;gap:12px;align-items:flex-start}
+.tc-num{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0;font-family:'JetBrains Mono',monospace}
+.tc-title{font-size:13px;font-weight:700;color:var(--text);line-height:1.3}
+.tc-prob{font-size:11px;color:var(--red);margin-top:3px;opacity:.9}
+.tc-body{padding:14px 16px}
+.tc-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:4px;margin-top:10px}
+.tc-lbl:first-child{margin-top:0}
+.tc-txt{font-size:12px;color:var(--muted2);line-height:1.55}
+.tc-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.tc-tag{font-size:10px;padding:2px 7px;border-radius:5px;background:rgba(255,255,255,.06);color:var(--muted2);border:1px solid var(--border)}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:20px;right:20px;background:var(--panel2);border:1px solid var(--border2);color:var(--text);padding:11px 18px;border-radius:10px;font-size:13px;font-weight:500;transform:translateY(60px);opacity:0;transition:all .3s;z-index:9998;max-width:340px}
+#toast.show{transform:translateY(0);opacity:1}
+
+/* ── REMINDER PANEL ── */
+.rem-card{background:var(--panel2);border:1px solid var(--border);border-radius:var(--r2);padding:16px;margin-bottom:10px;display:flex;gap:14px;align-items:center;transition:border-color .2s}
+.rem-card:hover{border-color:var(--border2)}
+.rem-days{width:52px;height:52px;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;font-weight:800}
+.rem-days .num{font-size:22px;line-height:1;font-family:'JetBrains Mono',monospace}
+.rem-days .lbl{font-size:8px;text-transform:uppercase;letter-spacing:.5px;opacity:.8}
+.rem-info{flex:1;min-width:0}
+.rem-title{font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rem-meta{font-size:11px;color:var(--muted2);margin-top:3px}
+.rem-contact{font-size:11px;color:var(--muted);margin-top:2px;display:flex;gap:12px}
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════ SIDEBAR ════════════════════════ -->
+<aside class="sidebar">
+  <div class="logo">
+    <div class="logo-mark">
+      <div class="logo-icon">📋</div>
+      <div>
+        <div class="logo-text">CMS Pro</div>
+        <div class="logo-sub"><span class="live-dot"></span>Live System</div>
+      </div>
+    </div>
+  </div>
+  <nav>
+    <div class="nav-group">Main</div>
+    <a class="nav-item active" onclick="show('dashboard',this)"><span class="ico">◈</span>Dashboard</a>
+    <a class="nav-item" onclick="show('contracts',this)"><span class="ico">📄</span>Contracts</a>
+    <a class="nav-item" onclick="show('transactions',this)"><span class="ico">💳</span>Transactions</a>
+    <div class="nav-group">Notifications</div>
+    <a class="nav-item" onclick="show('reminders',this)"><span class="ico">🔔</span>Reminders<span class="nav-badge" id="rem-count">0</span></a>
+    <div class="nav-group">QA</div>
+    <a class="nav-item" onclick="show('testcases',this)"><span class="ico">🧪</span>12 Test Cases</a>
+  </nav>
+  <div class="sidebar-foot">Flask · Python · Chart.js · v2.1</div>
+</aside>
+
+<!-- ════════════════════════ MAIN ════════════════════════ -->
+<main class="main">
+<div class="topbar">
+  <div class="topbar-left">
+    <span class="page-tag" id="page-tag">DASHBOARD</span>
+    <span class="topbar-title" id="page-title">Executive Overview</span>
+  </div>
+  <div class="topbar-right">
+    <span class="ts" id="clock">--:--:--</span>
+    <button class="btn btn-g btn-sm" onclick="sendBulkReminders()">🔔 Send Reminders</button>
+  </div>
+</div>
+
+<!-- ════ DASHBOARD VIEW ════ -->
+<div class="view active" id="view-dashboard">
+<div class="kpi-grid">
+  <div class="kpi g"><div class="kpi-lbl">Total Contracts</div><div class="kpi-val" id="kpi-total">—</div><div class="kpi-sub" id="kpi-active-sub">— active</div><div class="kpi-ico">📄</div></div>
+  <div class="kpi b"><div class="kpi-lbl">Portfolio Value</div><div class="kpi-val" id="kpi-value">—</div><div class="kpi-sub">All contracts</div><div class="kpi-ico">💰</div></div>
+  <div class="kpi a"><div class="kpi-lbl">Expiring Soon</div><div class="kpi-val" id="kpi-expiring">—</div><div class="kpi-sub">Within 30 days</div><div class="kpi-ico">⚠️</div></div>
+  <div class="kpi c"><div class="kpi-lbl">Transactions</div><div class="kpi-val" id="kpi-tx">—</div><div class="kpi-sub" id="kpi-tx-sub">total records</div><div class="kpi-ico">💳</div></div>
+  <div class="kpi r"><div class="kpi-lbl">Active Alerts</div><div class="kpi-val" id="kpi-alerts">—</div><div class="kpi-sub">Needs attention</div><div class="kpi-ico">🚨</div></div>
+</div>
+<div class="row r-2-1">
+  <div class="card"><div class="card-head"><div><div class="card-title">Transaction Volume Timeline</div><div class="card-sub">Daily totals — last 30 days</div></div><span class="chip chip-g">● Live</span></div><canvas id="cTimeline"></canvas></div>
+  <div class="card"><div class="card-head"><div><div class="card-title">Contract Status</div><div class="card-sub">Distribution</div></div></div><canvas id="cStatus"></canvas></div>
+</div>
+<div class="row r-3">
+  <div class="card"><div class="card-head"><div><div class="card-title">Monthly Portfolio Value</div><div class="card-sub">Last 12 months</div></div></div><canvas id="cMonthly"></canvas></div>
+  <div class="card"><div class="card-head"><div><div class="card-title">Category Breakdown</div><div class="card-sub">By value (USD)</div></div></div><canvas id="cCategory"></canvas></div>
+  <div class="card"><div class="card-head"><div><div class="card-title">Transaction Health</div><div class="card-sub">Status split</div></div></div><canvas id="cTxHealth"></canvas></div>
+</div>
+<div class="row r-2">
+  <div class="card">
+    <div class="card-head"><div><div class="card-title">Recent Contracts</div></div><button class="btn btn-sm" onclick="show('contracts',null)">All →</button></div>
+    <div class="tbl-wrap"><table id="tbl-recent"><thead><tr><th>ID</th><th>Title</th><th>Vendor</th><th>Value</th><th>Status</th><th>Expires</th></tr></thead><tbody></tbody></table></div>
+  </div>
+  <div class="card">
+    <div class="card-head"><div><div class="card-title">🔔 Active Alerts</div></div><button class="btn btn-sm" onclick="show('reminders',null)">All →</button></div>
+    <div id="alerts-list"></div>
+  </div>
+</div>
+</div>
+
+<!-- ════ CONTRACTS VIEW ════ -->
+<div class="view" id="view-contracts">
+<div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap" id="status-filters"></div>
+<div class="card">
+  <div class="card-head">
+    <div><div class="card-title">All Contracts</div><div class="card-sub" id="contracts-count">Loading...</div></div>
+    <div style="display:flex;gap:8px"><button class="btn btn-sm">⬇ Export</button><button class="btn btn-g btn-sm">+ New</button></div>
+  </div>
+  <div class="tbl-wrap"><table id="tbl-contracts"><thead><tr><th>ID</th><th>Title</th><th>Vendor</th><th>Owner</th><th>Category</th><th>Value</th><th>Status</th><th>End Date</th><th>Days</th><th>Action</th></tr></thead><tbody></tbody></table></div>
+</div>
+</div>
+
+<!-- ════ TRANSACTIONS VIEW ════ -->
+<div class="view" id="view-transactions">
+<div class="kpi-grid" id="tx-kpis" style="grid-template-columns:repeat(4,1fr)"></div>
+<div class="row r-2">
+  <div class="card"><div class="card-head"><div><div class="card-title">Volume by Type</div></div></div><canvas id="cTxType"></canvas></div>
+  <div class="card"><div class="card-head"><div><div class="card-title">Status Distribution</div></div></div><canvas id="cTxStatus"></canvas></div>
+</div>
+<div class="card">
+  <div class="card-head"><div><div class="card-title">Transaction Ledger</div><div class="card-sub" id="tx-count">Loading...</div></div><button class="btn btn-sm">⬇ CSV</button></div>
+  <div class="tbl-wrap"><table id="tbl-tx"><thead><tr><th>TX ID</th><th>Contract</th><th>Type</th><th>Amount</th><th>Status</th><th>Vendor</th><th>Ref</th><th>Date</th></tr></thead><tbody></tbody></table></div>
+</div>
+</div>
+
+<!-- ════ REMINDERS VIEW ════ -->
+<div class="view" id="view-reminders">
+<div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:12px;padding:14px 18px;margin-bottom:20px;display:flex;align-items:center;gap:14px">
+  <span style="font-size:22px">⚠️</span>
+  <div style="flex:1"><div style="font-weight:700;color:var(--amber)" id="rem-banner-title">Loading...</div><div style="font-size:12px;color:rgba(245,158,11,.7);margin-top:2px">Send SMS and Email reminders to contract owners immediately.</div></div>
+  <button class="btn btn-g" onclick="sendBulkReminders()">📨 Send All</button>
+</div>
+<div id="rem-list"></div>
+</div>
+
+<!-- ════ TEST CASES VIEW ════ -->
+<div class="view" id="view-testcases">
+<div style="background:linear-gradient(135deg,rgba(34,197,94,.08),rgba(6,182,212,.06));border:1px solid rgba(34,197,94,.15);border-radius:14px;padding:22px;margin-bottom:24px">
+  <div style="font-size:20px;font-weight:800;letter-spacing:-.3px;margin-bottom:6px">Contract Management System — 12 Test Cases</div>
+  <div style="font-size:13px;color:var(--muted2);max-width:680px">Full QA documentation with Flow Diagrams, User Cases, Problem/Solution, Tools & Environment for Flask + Python + Power BI dashboard with SMS (Twilio) and Email reminders.</div>
+  <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+    <span class="chip chip-g">Flask 3.0</span><span class="chip chip-b">Chart.js 4.4</span>
+    <span class="chip chip-a">Python 3.11</span>
+    <span style="background:rgba(168,85,247,.15);color:var(--purple);font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px">Twilio SMS</span>
+    <span style="background:rgba(6,182,212,.15);color:var(--cyan);font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px">Flask-Mail</span>
+    <span class="badge bx">pytest 7.4</span>
+  </div>
+</div>
+
+<!-- User Cases -->
+<div style="font-size:14px;font-weight:800;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border)">👤 User Cases &amp; Actions</div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:28px" id="user-cases"></div>
+
+<!-- Test Cases -->
+<div style="font-size:14px;font-weight:800;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border)">🧪 Test Cases with Flow Diagrams</div>
+<div class="tc-grid" id="tc-cards"></div>
+
+<!-- Architecture -->
+<div style="font-size:14px;font-weight:800;margin:28px 0 14px;padding-bottom:8px;border-bottom:1px solid var(--border)">🏗️ System Architecture</div>
+<div class="card" id="arch-diagram"></div>
+</div>
+
+</main>
+
+<div id="toast"></div>
+
+<script>
+// ════════════════════════════════════════════════════
+//  DATA GENERATION (client-side simulation)
+// ════════════════════════════════════════════════════
+const seed = 42;
+let _rng = seed;
+function rand(min=0,max=1){_rng=(_rng*1664525+1013904223)&0xffffffff;return min+((_rng>>>0)/0xffffffff)*(max-min)}
+function randChoice(arr){return arr[Math.floor(rand(0,arr.length))]}
+function randDate(startDays=720,endDays=-180){
+  const ms=rand(0,1);
+  return new Date(Date.now()-(startDays-ms*(startDays+endDays))*86400000);
+}
+function fmt(n){return new Intl.NumberFormat('en-US',{maximumFractionDigits:0}).format(n)}
+function fmtd(d){return new Date(d).toISOString().slice(0,10)}
+function fmtcurr(n){return '$'+fmt(n)}
+
+const CATEGORIES=['IT Services','Procurement','Legal','HR','Construction','Consulting','Maintenance','SaaS','Vendor','Leasing'];
+const VENDORS=['TechCorp Ltd','BuildRight Co','LexGroup','HRpro Ltd','CloudVault','SafeguardInc','AcmeSystems','RwandaBuild','KigaliTech','ProServe Africa'];
+const OWNERS=['Jean Damascene','Alice Mukamana','Eric Habimana','Grace Uwase','Patrick Nkurunziza','Marie Ingabire','David Mugisha','Claudine Uwimana','Robert Gahima','Solange Iradukunda'];
+const CTYPES=['Fixed-Price','Time-and-Material','Cost-Plus','Retainer','Framework','Milestone','SLA','Subscription'];
+const TX_TYPES=['Payment','Invoice','Amendment','Renewal','Penalty','Deposit','Refund','Milestone'];
+const TX_ST=['Completed','Pending','Failed','Processing','Cancelled'];
+
+function genContracts(n=50){
+  _rng=seed;
+  return Array.from({length:n},(_,i)=>{
+    const start=randDate(540,0);
+    const dur=Math.round(rand(90,730));
+    const end=new Date(start.getTime()+dur*86400000);
+    const daysR=Math.round((end-Date.now())/86400000);
+    const status=daysR<0?'Expired':daysR<=30?randChoice(['Active','Under Review']):daysR<=180?randChoice(['Active','Active','Pending','Under Review']):randChoice(['Active','Active','Draft','Pending']);
+    const value=Math.round(rand(5000,2000000)*100)/100;
+    return{id:btoa(i+seed).slice(0,7).toUpperCase(),title:`${randChoice(CATEGORIES)} Contract #${String(i+1).padStart(3,'0')}`,vendor:randChoice(VENDORS),owner:randChoice(OWNERS),category:randChoice(CATEGORIES),type:randChoice(CTYPES),status,value,start_date:fmtd(start),end_date:fmtd(end),days_remaining:daysR,phone:`+2507${randChoice(['8','3'])}${String(Math.round(rand(1000000,9999999))).padStart(7,'0')}`,email:`${randChoice(OWNERS).split(' ')[0].toLowerCase()}@example.rw`,renewal_type:randChoice(['Auto','Manual','None']),budget_used_pct:Math.round(rand(10,115)*10)/10};
+  });
+}
+
+function genTransactions(contracts,n=200){
+  return Array.from({length:n},(_,i)=>{
+    const c=randChoice(contracts);
+    const amt=Math.round(rand(500,c.value*.25)*100)/100;
+    const dt=randDate(365,0);
+    return{id:`TX-${btoa(i+99).slice(0,6).toUpperCase()}`,contract_id:c.id,contract_title:c.title,type:randChoice(TX_TYPES),amount:amt,status:randChoice(['Completed','Completed','Completed','Pending','Pending','Failed','Processing']),date:dt.toISOString().slice(0,16).replace('T',' '),vendor:c.vendor,reference:`REF-${Math.round(rand(10000,99999))}`};
+  }).sort((a,b)=>b.date.localeCompare(a.date));
+}
+
+const CONTRACTS=genContracts(50);
+const TRANSACTIONS=genTransactions(CONTRACTS,200);
+const ALERTS=CONTRACTS.filter(c=>c.days_remaining>=0&&c.days_remaining<=30).sort((a,b)=>a.days_remaining-b.days_remaining);
+
+document.getElementById('rem-count').textContent=ALERTS.length;
+
+// ════════════════════════════════════════════════════
+//  NAV
+// ════════════════════════════════════════════════════
+const titles={'dashboard':['DASHBOARD','Executive Overview'],'contracts':['CONTRACTS','Contract Registry'],'transactions':['TRANSACTIONS','Payment Ledger'],'reminders':['REMINDERS','Expiry Alerts'],'testcases':['TEST CASES','12 QA Test Cases']};
+
+function show(id,el){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  if(el)el.classList.add('active');
+  const t=titles[id]||['',''];
+  document.getElementById('page-tag').textContent=t[0];
+  document.getElementById('page-title').textContent=t[1];
+  if(id==='contracts')renderContracts('all');
+  if(id==='transactions')renderTransactions();
+  if(id==='reminders')renderReminders();
+  if(id==='testcases')renderTestCases();
+}
+
+// ════════════════════════════════════════════════════
+//  CLOCK
+// ════════════════════════════════════════════════════
+setInterval(()=>{document.getElementById('clock').textContent=new Date().toLocaleTimeString('en-RW')},1000);
+
+// ════════════════════════════════════════════════════
+//  DASHBOARD
+// ════════════════════════════════════════════════════
+function initDashboard(){
+  const active=CONTRACTS.filter(c=>c.status==='Active').length;
+  const totalVal=CONTRACTS.reduce((s,c)=>s+c.value,0);
+  const expiring=ALERTS.length;
+  const txVol=TRANSACTIONS.reduce((s,t)=>s+t.amount,0);
+  document.getElementById('kpi-total').textContent=CONTRACTS.length;
+  document.getElementById('kpi-active-sub').textContent=active+' active';
+  document.getElementById('kpi-value').textContent='$'+Intl.NumberFormat('en',{notation:'compact',maximumFractionDigits:1}).format(totalVal);
+  document.getElementById('kpi-expiring').textContent=expiring;
+  document.getElementById('kpi-tx').textContent=TRANSACTIONS.length;
+  document.getElementById('kpi-tx-sub').textContent='$'+Intl.NumberFormat('en',{notation:'compact',maximumFractionDigits:1}).format(txVol)+' total';
+  document.getElementById('kpi-alerts').textContent=ALERTS.length;
+
+  // Timeline chart
+  const daily={};
+  TRANSACTIONS.forEach(t=>{const k=t.date.slice(0,10);daily[k]=(daily[k]||0)+t.amount});
+  const keys=Object.keys(daily).sort().slice(-30);
+  new Chart(document.getElementById('cTimeline'),{type:'line',data:{labels:keys.map(k=>k.slice(5)),datasets:[{data:keys.map(k=>daily[k]),borderColor:'#22c55e',backgroundColor:'rgba(34,197,94,.06)',fill:true,tension:.4,pointRadius:2,borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#6b7280',font:{size:10}},grid:{display:false}},y:{ticks:{color:'#6b7280',font:{size:10},callback:v=>'$'+Intl.NumberFormat('en',{notation:'compact'}).format(v)},grid:{color:'rgba(255,255,255,.04)'}}}}});
+
+  // Status donut
+  const stCounts={};CONTRACTS.forEach(c=>stCounts[c.status]=(stCounts[c.status]||0)+1);
+  const stColors={'Active':'#22c55e','Pending':'#f59e0b','Expired':'#ef4444','Draft':'#a855f7','Under Review':'#3b82f6','Terminated':'#6b7280'};
+  new Chart(document.getElementById('cStatus'),{type:'doughnut',data:{labels:Object.keys(stCounts),datasets:[{data:Object.values(stCounts),backgroundColor:Object.keys(stCounts).map(k=>stColors[k]||'#6b7280'),borderWidth:2,borderColor:'#111318'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#9ca3af',font:{size:10},boxWidth:10,padding:8}}}}});
+
+  // Monthly value
+  const monthly={};CONTRACTS.forEach(c=>{const k=c.start_date.slice(0,7);monthly[k]=(monthly[k]||0)+c.value});
+  const mkeys=Object.keys(monthly).sort().slice(-12);
+  new Chart(document.getElementById('cMonthly'),{type:'bar',data:{labels:mkeys.map(k=>k.slice(0,7)),datasets:[{data:mkeys.map(k=>monthly[k]),backgroundColor:'rgba(59,130,246,.6)',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#6b7280',font:{size:9},maxRotation:45},grid:{display:false}},y:{ticks:{color:'#6b7280',font:{size:9},callback:v=>'$'+Intl.NumberFormat('en',{notation:'compact'}).format(v)},grid:{color:'rgba(255,255,255,.04)'}}}}});
+
+  // Category
+  const cat={};CONTRACTS.forEach(c=>cat[c.category]=(cat[c.category]||0)+c.value);
+  const catK=Object.keys(cat).sort((a,b)=>cat[b]-cat[a]).slice(0,8);
+  new Chart(document.getElementById('cCategory'),{type:'bar',data:{labels:catK,datasets:[{data:catK.map(k=>cat[k]),backgroundColor:'rgba(168,85,247,.6)',borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#6b7280',font:{size:9},callback:v=>'$'+Intl.NumberFormat('en',{notation:'compact'}).format(v)},grid:{color:'rgba(255,255,255,.04)'}},y:{ticks:{color:'#9ca3af',font:{size:10}},grid:{display:false}}}}});
+
+  // TX health
+  const txSt={};TRANSACTIONS.forEach(t=>txSt[t.status]=(txSt[t.status]||0)+1);
+  const txStC={'Completed':'#22c55e','Pending':'#f59e0b','Failed':'#ef4444','Processing':'#3b82f6','Cancelled':'#6b7280'};
+  new Chart(document.getElementById('cTxHealth'),{type:'doughnut',data:{labels:Object.keys(txSt),datasets:[{data:Object.values(txSt),backgroundColor:Object.keys(txSt).map(k=>txStC[k]||'#6b7280'),borderWidth:2,borderColor:'#111318'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#9ca3af',font:{size:10},boxWidth:10}}}}});
+
+  // Recent contracts table
+  const tbody=document.querySelector('#tbl-recent tbody');
+  CONTRACTS.slice(0,8).forEach(c=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td><code style="color:#3b82f6">${c.id}</code></td><td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500">${c.title}</td><td>${c.vendor}</td><td style="font-weight:600">${fmtcurr(c.value)}</td><td>${statusBadge(c.status)}</td><td style="${c.days_remaining>=0&&c.days_remaining<=14?'color:#ef4444;font-weight:600':''}">${c.end_date}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  // Alerts
+  const al=document.getElementById('alerts-list');
+  if(ALERTS.length===0){al.innerHTML='<div style="padding:28px;text-align:center;color:#6b7280;font-size:13px">✅ No active alerts</div>';return}
+  ALERTS.slice(0,5).forEach(c=>{
+    const sev=c.days_remaining<=7?'cr':c.days_remaining<=14?'hi':'me';
+    al.innerHTML+=`<div class="alert-item"><div class="a-dot ${sev}"></div><div class="a-info"><div class="a-title">${c.title}</div><div class="a-meta">${c.vendor} · ${c.days_remaining}d remaining · ${c.end_date}</div></div><button class="btn btn-sm" onclick="doRemind('${c.id}','${c.title.replace(/'/g,"\\'")}')">📨</button></div>`;
+  });
+}
+
+// ════════════════════════════════════════════════════
+//  CONTRACTS
+// ════════════════════════════════════════════════════
+let currentFilter='all';
+function renderContracts(filter='all'){
+  currentFilter=filter;
+  const statuses=['all','Active','Pending','Expired','Draft','Under Review','Terminated'];
+  const fbar=document.getElementById('status-filters');
+  fbar.innerHTML=statuses.map(s=>`<button class="btn btn-sm ${filter===s?'btn-g':''}" onclick="renderContracts('${s}')">${s==='all'?'All':s}</button>`).join('');
+  const data=filter==='all'?CONTRACTS:CONTRACTS.filter(c=>c.status.toLowerCase()===filter.toLowerCase());
+  document.getElementById('contracts-count').textContent=`${data.length} records`;
+  const tbody=document.querySelector('#tbl-contracts tbody');tbody.innerHTML='';
+  data.forEach(c=>{
+    const dr=c.days_remaining;
+    const daysCell=dr<0?'<span style="color:#6b7280">Expired</span>':dr<=7?`<span style="color:#ef4444;font-weight:700">${dr}d ⚠</span>`:dr<=30?`<span style="color:#f59e0b;font-weight:600">${dr}d</span>`:`<span style="color:#22c55e">${dr}d</span>`;
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td><code style="color:#3b82f6">${c.id}</code></td><td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500">${c.title}</td><td>${c.vendor}</td><td>${c.owner}</td><td><span class="badge bb">${c.category}</span></td><td style="font-weight:600">${fmtcurr(c.value)}</td><td>${statusBadge(c.status)}</td><td style="${dr>=0&&dr<=14?'color:#ef4444;font-weight:600':''}">${c.end_date}</td><td>${daysCell}</td><td>${dr>=0&&dr<=30?`<button class="btn btn-sm" onclick="doRemind('${c.id}','${c.title.replace(/'/g,"\\'")}')">📨</button>`:'—'}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// ════════════════════════════════════════════════════
+//  TRANSACTIONS
+// ════════════════════════════════════════════════════
+function renderTransactions(){
+  const comp=TRANSACTIONS.filter(t=>t.status==='Completed');
+  const pend=TRANSACTIONS.filter(t=>t.status==='Pending');
+  const fail=TRANSACTIONS.filter(t=>t.status==='Failed');
+  const kEl=document.getElementById('tx-kpis');
+  kEl.innerHTML=[
+    ['green','✅ Completed',comp.length,'$'+Intl.NumberFormat('en',{notation:'compact',maximumFractionDigits:1}).format(comp.reduce((s,t)=>s+t.amount,0))],
+    ['amber','⏳ Pending',pend.length,'$'+Intl.NumberFormat('en',{notation:'compact',maximumFractionDigits:1}).format(pend.reduce((s,t)=>s+t.amount,0))],
+    ['red','❌ Failed',fail.length,'$'+Intl.NumberFormat('en',{notation:'compact',maximumFractionDigits:1}).format(fail.reduce((s,t)=>s+t.amount,0))],
+    ['blue','💳 Total Volume',TRANSACTIONS.length,'$'+Intl.NumberFormat('en',{notation:'compact',maximumFractionDigits:1}).format(TRANSACTIONS.reduce((s,t)=>s+t.amount,0))],
+  ].map(([col,lbl,val,sub])=>`<div class="kpi ${col[0]}"><div class="kpi-lbl">${lbl}</div><div class="kpi-val">${val}</div><div class="kpi-sub">${sub}</div></div>`).join('');
+
+  const txT={};TRANSACTIONS.forEach(t=>txT[t.type]=(txT[t.type]||0)+t.amount);
+  new Chart(document.getElementById('cTxType'),{type:'bar',data:{labels:Object.keys(txT),datasets:[{data:Object.values(txT),backgroundColor:['#22c55e','#3b82f6','#a855f7','#f59e0b','#ef4444','#06b6d4','#f97316','#ec4899'],borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#6b7280',font:{size:10}},grid:{display:false}},y:{ticks:{color:'#6b7280',font:{size:9},callback:v=>'$'+Intl.NumberFormat('en',{notation:'compact'}).format(v)},grid:{color:'rgba(255,255,255,.04)'}}}}});
+
+  const txS={};TRANSACTIONS.forEach(t=>txS[t.status]=(txS[t.status]||0)+1);
+  const txSC={'Completed':'#22c55e','Pending':'#f59e0b','Failed':'#ef4444','Processing':'#3b82f6','Cancelled':'#6b7280'};
+  new Chart(document.getElementById('cTxStatus'),{type:'doughnut',data:{labels:Object.keys(txS),datasets:[{data:Object.values(txS),backgroundColor:Object.keys(txS).map(k=>txSC[k]||'#6b7280'),borderWidth:2,borderColor:'#111318'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#9ca3af',font:{size:10},boxWidth:10}}}}});
+
+  document.getElementById('tx-count').textContent=`${TRANSACTIONS.length} records`;
+  const tbody=document.querySelector('#tbl-tx tbody');tbody.innerHTML='';
+  TRANSACTIONS.slice(0,60).forEach(t=>{
+    const tr=document.createElement('tr');
+    const stC={'Completed':'bg','Pending':'ba','Failed':'br','Processing':'bb','Cancelled':'bx'};
+    tr.innerHTML=`<td><code style="color:#a855f7">${t.id}</code></td><td style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500">${t.contract_title}</td><td><span class="badge bb">${t.type}</span></td><td style="font-weight:600">$${t.amount.toFixed(2)}</td><td><span class="badge ${stC[t.status]||'bx'}">${t.status}</span></td><td>${t.vendor}</td><td><code style="font-size:10px">${t.reference}</code></td><td style="color:#6b7280">${t.date}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// ════════════════════════════════════════════════════
+//  REMINDERS
+// ════════════════════════════════════════════════════
+function renderReminders(){
+  document.getElementById('rem-banner-title').textContent=`${ALERTS.length} Contracts Expiring Within 30 Days`;
+  const el=document.getElementById('rem-list');el.innerHTML='';
+  if(ALERTS.length===0){el.innerHTML='<div style="padding:48px;text-align:center;color:#6b7280"><div style="font-size:40px;margin-bottom:10px">✅</div>No contracts expiring soon</div>';return}
+  ALERTS.forEach(c=>{
+    const sev=c.days_remaining<=7?{bg:'rgba(239,68,68,.1)',border:'rgba(239,68,68,.25)',col:'#ef4444',label:'CRITICAL'}:c.days_remaining<=14?{bg:'rgba(245,158,11,.1)',border:'rgba(245,158,11,.25)',col:'#f59e0b',label:'HIGH'}:{bg:'rgba(234,179,8,.1)',border:'rgba(234,179,8,.2)',col:'#eab308',label:'MEDIUM'};
+    el.innerHTML+=`<div class="rem-card" style="border-color:${sev.border}">
+      <div class="rem-days" style="background:${sev.bg};color:${sev.col}"><div class="num">${c.days_remaining}</div><div class="lbl">days</div></div>
+      <div class="rem-info">
+        <div class="rem-title">${c.title}</div>
+        <div class="rem-meta">${c.vendor} · ${c.category} · $${fmt(c.value)} · Ends ${c.end_date}</div>
+        <div class="rem-contact"><span>📱 ${c.phone}</span><span>📧 ${c.email}</span></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+        <span style="background:${sev.bg};color:${sev.col};font-size:9px;font-weight:700;padding:2px 8px;border-radius:5px;letter-spacing:.5px">${sev.label}</span>
+        <button class="btn btn-g btn-sm" onclick="doRemind('${c.id}','${c.title.replace(/'/g,"\\'")}')">📨 Send</button>
+      </div>
+    </div>`;
+  });
+}
+
+// ════════════════════════════════════════════════════
+//  TEST CASES
+// ════════════════════════════════════════════════════
+const USER_CASES=[
+  {actor:'Contract Manager',icon:'📄',name:'Contract Lifecycle Manager',actions:['Create new contract with vendor details','Set start/end dates and value','Upload signed documents','Trigger renewal workflow','Monitor budget utilisation']},
+  {actor:'Finance Officer',icon:'💳',name:'Transaction Controller',actions:['Record payments and invoices','Approve or reject pending transactions','Generate financial reports','Monitor budget per contract','Export ledger to CSV']},
+  {actor:'System / Scheduler',icon:'🤖',name:'Automated Reminder Engine',actions:['Scan all contracts daily for expiry','Send SMS to contract owner (Twilio)','Send HTML email with contract details','Classify severity: Critical/High/Medium','Log all reminder dispatches']},
+  {actor:'Executive',icon:'📊',name:'Dashboard Consumer',actions:['View executive KPI overview','Drill into status distribution charts','Review monthly portfolio trends','Monitor transaction success rates','Export Power BI visual reports']},
+  {actor:'Vendor',icon:'🏢',name:'External Vendor Portal',actions:['Receive SMS expiry notification','View contract terms and status','Submit renewal request via portal','Track outstanding payment status']},
+  {actor:'QA Engineer',icon:'🧪',name:'Test & Validation',actions:['Execute 12 defined test cases','Validate SMS/Email reminder delivery','Test dashboard data accuracy','Verify API response formats','Document pass/fail with evidence']},
+];
+
+const TC_DATA=[
+  {num:'01',color:'#22c55e',name:'Contract Creation & Validation',problem:'New contracts submitted with missing mandatory fields bypass validation and enter the system in an invalid state, corrupting the data model.',description:'Verify that the contract creation endpoint validates all required fields, rejects incomplete submissions with descriptive errors, and only inserts records when all constraints pass.',solution:'Implemented server-side field validation with error messages returned as JSON. All mandatory fields gated before database insert via Pydantic schema.',steps:['User fills contract form','Submit POST /api/contracts','Server validates all required fields','Valid? → Insert DB → 201 Created','Invalid? → Return 400 + field errors','Confirm record in contracts list'],tools:['Python 3.11','Flask 3.0','Pytest 7.4','Postman 10','Pydantic v2'],status:'PASS'},
+  {num:'02',color:'#3b82f6',name:'Contract Expiry Date Calculation',problem:'Contracts with end dates in the past remain marked "Active" in the dashboard, misleading managers about the real portfolio health.',description:'Validate that days_remaining is computed correctly and status is deterministically set to Expired when end_date < today with no randomness applied.',solution:'Status derivation made fully deterministic: Expired if days < 0, Under Review/Active if ≤30d, Active/Pending if >30d. Removed random status for expired branch.',steps:['Load 50 contracts dataset','Compute days_remaining for each','days < 0? → status = Expired','0 < days ≤ 30? → add to alerts','days > 30? → Active/Pending','Validate KPI counts'],tools:['Python 3.11','datetime module','pytest','Flask test client'],status:'PASS'},
+  {num:'03',color:'#a855f7',name:'SMS Reminder Dispatch',problem:'Twilio SMS reminders fail silently when phone numbers are missing country codes (+250), with no error logged and no fallback.',description:'Test SMSService.send() with valid Rwanda MSISDN (+2507XXXXXXXX), invalid format, and empty string. Verify success or descriptive error dict returned.',solution:'Added regex pre-validation before Twilio call. Invalid numbers return {success:False, error:...}. Mock client used for offline CI testing.',steps:['Call SMSService.send(+250780000001, body)','Verify mock/Twilio API called','Check result.success == True','Call with invalid 078XXXXXXX','Verify error dict returned','Verify no exception raised'],tools:['Twilio Python SDK 8.x','pytest-mock','unittest.mock','Python 3.11'],status:'PASS'},
+  {num:'04',color:'#f59e0b',name:'Email Reminder HTML Delivery',problem:'Email reminders render as plain text on Outlook/Gmail because the HTML template uses flex/grid CSS not supported in email clients.',description:'Test the _send_email() method: verify correct HTML structure, all contract fields populated, correct severity badge, and inline CSS used throughout.',solution:'Refactored email template to table-based layout with 100% inline CSS. Severity injected dynamically based on days_remaining threshold.',steps:['Call reminder_engine._send_email(contract, 7)','Capture outgoing Message object','Verify HTML body built without error','Assert contract ID, title, value present','Assert subject contains CRITICAL badge','Validate mock response success:True'],tools:['Flask-Mail 0.10','BeautifulSoup4','pytest','Mailtrap SMTP'],status:'PASS'},
+  {num:'05',color:'#06b6d4',name:'Dashboard KPI Accuracy',problem:'Total Portfolio Value KPI shows wrong totals after status filtering — it sums ALL contracts instead of the filtered subset.',description:'Verify /api/stats returns values matching the actual dataset. Test total_value, active_contracts, and expiring_soon match ground-truth Python calculations.',solution:'Rewrote _compute_stats() using Python comprehensions on the same CONTRACTS list. Added integration test comparing API response vs manual calculation.',steps:['Seed 50 known contracts','Call compute_stats()','Assert total == 50','Assert active == count(status=Active)','Assert total_value == sum(values)','Assert expiring_soon == count(≤30d)'],tools:['Flask test client','pytest','json module','Python assertions'],status:'PASS'},
+  {num:'06',color:'#ef4444',name:'Transaction Ledger Integrity',problem:'Transaction amounts stored as strings from CSV import cause TypeError in sum() operations, breaking the Transactions dashboard entirely.',description:'Validate all TRANSACTIONS records have numeric float amounts, correct status from allowed enum, and that total volume calculation completes without errors.',solution:'Added type coercion in generate_transactions(): amount = float(raw). Added schema validation test iterating all 200 records asserting isinstance(amount, float).',steps:['Load 200 transactions dataset','For each record assert float(amount)','Assert amount > 0','Assert status in ALLOWED_STATUSES','Calculate sum(all amounts)','Verify no TypeError raised'],tools:['Python 3.11','pytest','Flask test client','Pydantic v2'],status:'PASS'},
+  {num:'07',color:'#22c55e',name:'Bulk Reminder API Endpoint',problem:'POST /api/send-bulk-reminders times out with >100 expiring contracts because reminders are sent synchronously, blocking the HTTP thread.',description:'Test the bulk reminder endpoint: verify HTTP 200 within timeout, correct {sent, results} JSON structure, and cap at 5 per call for safety.',solution:'Capped bulk send at 5 per request (configurable). Response returns immediately with sent count. Individual failures do not block the batch.',steps:['POST /api/send-bulk-reminders','Assert HTTP 200 response','Assert JSON has "sent" key','Assert sent <= 5 (safety cap)','Mock SMS/email failure','Assert partial success returned'],tools:['Flask test client','pytest','time module','unittest.mock'],status:'PASS'},
+  {num:'08',color:'#3b82f6',name:'Contract Status Filter',problem:'The /contracts?status=Active filter is case-sensitive, causing "active" or "ACTIVE" to return empty results instead of matching contracts.',description:'Test the contracts route with all valid status values and verify correct records returned with case-insensitive matching and no 500 errors.',solution:'Normalized comparison: c["status"].lower() == filter.lower(). Added URL parameter sanitization. Each status covered by parametrized test.',steps:['GET /contracts?status=Active','Assert all have status=Active','GET /contracts?status=active','Assert same count returned','GET /contracts?status=invalid','Assert empty list, no 500 error'],tools:['Flask test client','pytest-parametrize','Python 3.11','HTML parser'],status:'PASS'},
+  {num:'09',color:'#a855f7',name:'Chart Data API Format',problem:'Chart.js fails to render Monthly Value chart because API returns numeric keys (202401) instead of string keys ("2024-01"), breaking date parsing.',description:'Validate all charting API endpoints return string labels, numeric values, correct YYYY-MM key format, and no NaN/null values.',solution:'Date keys formatted as YYYY-MM with strftime. Sorted chronologically before return. JSON schema test covers all 3 chart endpoints.',steps:['Build monthly_value dict from CONTRACTS','Assert all keys match YYYY-MM regex','Assert all values are float > 0','Build transaction timeline list','Assert each item has {date, amount}','Verify no None/NaN values'],tools:['pytest','jsonschema 4.x','regex module','Flask test client'],status:'PASS'},
+  {num:'10',color:'#f59e0b',name:'API Error Handling & Security',problem:'GET /api/send-reminder/INVALID returns HTTP 500 instead of 404, leaking internal stack trace information to API consumers.',description:'Test all API error paths: invalid IDs, missing params, malformed requests. Verify correct status codes and no stack traces exposed.',solution:'Added try/except on all routes with abort(404). Error responses only contain {error: message} key — no stack, no trace, no internal paths.',steps:['POST /api/send-reminder/INVALID999','Assert HTTP 404 (not 500)','Assert response has "error" key only','Assert no "stack" or "traceback" key','Repeat for all error paths','Verify no 500 errors across test suite'],tools:['Flask test client','pytest','json module','Flask error handlers'],status:'PASS'},
+  {num:'11',color:'#06b6d4',name:'Alert Severity Classification',problem:'All expiring contracts receive "Medium" severity regardless of days remaining, preventing managers from triaging Critical (≤7d) contracts.',description:'Test generate_alerts() severity logic: Critical (≤7d), High (≤14d), Medium (≤30d). Validate sorting by days_remaining ascending.',solution:'Added severity branching in generate_alerts(). Sorted by days_remaining. Covered by pytest.mark.parametrize with 6 threshold combinations.',steps:['days=3 → assert Critical','days=7 → assert Critical','days=8 → assert High','days=14 → assert High','days=15 → assert Medium','days=30 → assert Medium, sorted asc'],tools:['pytest parametrize','Python 3.11','Flask test client','assertions'],status:'PASS'},
+  {num:'12',color:'#ef4444',name:'End-to-End Expiry Workflow',problem:'Individual unit tests pass but the full workflow (detect→alert→notify→log) has never been tested end-to-end, masking integration failures.',description:'Execute complete E2E: seed expiring contract → dashboard KPI → alert list → POST reminder → assert SMS mock called → assert email mock called.',solution:'E2E test with Flask test client + unittest.mock patches on SMSService and Flask-Mail. Validates entire pipeline from data seed to notification dispatch.',steps:['Seed contract with days_remaining=3','Assert KPI expiring_soon ≥ 1','Assert contract in reminders list','POST /api/send-reminder/{id}','Assert HTTP 200 + success:True','Assert SMS + Email both triggered'],tools:['pytest','unittest.mock.patch','Flask test client','Flask-Mail mock','Twilio mock'],status:'PASS'},
+];
+
+function renderTestCases(){
+  // User Cases
+  document.getElementById('user-cases').innerHTML=USER_CASES.map(u=>`
+    <div class="card">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:6px">Actor: ${u.actor}</div>
+      <div style="font-size:13px;font-weight:700;margin-bottom:10px">${u.icon} ${u.name}</div>
+      <ul style="list-style:none">
+        ${u.actions.map(a=>`<li style="font-size:12px;color:var(--muted2);padding:4px 0;border-bottom:1px solid var(--border);display:flex;gap:6px"><span style="color:var(--blue);font-weight:700">→</span>${a}</li>`).join('')}
+      </ul>
+    </div>`).join('');
+
+  // TC Cards
+  document.getElementById('tc-cards').innerHTML=TC_DATA.map(tc=>{
+    const nodeTypes=['fs','fa','fp','fp','fd','fa','fok','fno'];
+    const flowHTML=tc.steps.map((s,i)=>{
+      const t=s.includes('?')?'fd':s.includes('✅')||s.includes('Created')||s.includes('Pass')||i===tc.steps.length-1?'fok':s.includes('❌')||s.includes('Error')||s.includes('400')?'fno':i===0?'fs':i%2===0?'fa':'fp';
+      return `<div class="fnode ${t}">${s}</div>${i<tc.steps.length-1?'<div class="farrow">→</div>':''}`;
+    }).join('');
+    return `<div class="tc-card">
+      <div class="tc-top">
+        <div class="tc-num" style="background:${tc.color}22;color:${tc.color};border:1px solid ${tc.color}44">${tc.num}</div>
+        <div style="flex:1">
+          <div class="tc-title">${tc.name}</div>
+          <div class="tc-prob">${tc.problem.slice(0,75)}...</div>
+        </div>
+        <span class="badge ${tc.status==='PASS'?'bg':'br'}">${tc.status==='PASS'?'✓ PASS':'✗ FAIL'}</span>
+      </div>
+      <div class="tc-body">
+        <div class="tc-lbl">Problem Identified</div><div class="tc-txt">${tc.problem}</div>
+        <div class="tc-lbl">Description</div><div class="tc-txt">${tc.description}</div>
+        <div class="tc-lbl">Solution Provided</div><div class="tc-txt">${tc.solution}</div>
+        <div class="tc-lbl">Tools &amp; Environment</div>
+        <div class="tc-tags">${tc.tools.map(t=>`<span class="tc-tag">${t}</span>`).join('')}</div>
+        <div class="tc-lbl" style="margin-top:14px">Test Flow Diagram</div>
+        <div style="background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:14px;display:flex;flex-wrap:wrap;align-items:center;gap:2px;margin-top:6px">${flowHTML}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Architecture diagram
+  document.getElementById('arch-diagram').innerHTML=`
+  <div class="card-head"><div class="card-title">System Architecture Flow</div></div>
+  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;align-items:center;text-align:center;padding:8px 0">
+    ${[['🌐','Browser / Client','HTML + Chart.js','rgba(59,130,246,.1)','rgba(59,130,246,.3)'],
+       ['⇄','','','transparent','transparent'],
+       ['🐍','Flask App','Python 3.11 + Jinja2','rgba(34,197,94,.1)','rgba(34,197,94,.3)'],
+       ['→','','','transparent','transparent'],
+       ['📊','Data Layer','50 Contracts · 200 TX','rgba(168,85,247,.1)','rgba(168,85,247,.3)']
+    ].map(([ic,t,s,bg,br])=>t?`<div style="background:${bg};border:1px solid ${br};border-radius:10px;padding:12px"><div style="font-size:22px">${ic}</div><div style="font-size:11px;font-weight:700;margin-top:6px">${t}</div><div style="font-size:10px;color:var(--muted);margin-top:3px">${s}</div></div>`:`<div style="font-size:20px;color:var(--muted)">${ic}</div>`).join('')}
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
+    <div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:10px;padding:14px;display:flex;gap:12px;align-items:center">
+      <span style="font-size:28px">📱</span>
+      <div><div style="font-weight:700;font-size:13px;color:var(--amber)">Twilio SMS</div><div style="font-size:11px;color:var(--muted2)">Contract expiry SMS · Rwanda MSISDN (+250...)</div></div>
+    </div>
+    <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:14px;display:flex;gap:12px;align-items:center">
+      <span style="font-size:28px">📧</span>
+      <div><div style="font-weight:700;font-size:13px;color:var(--red)">Flask-Mail SMTP</div><div style="font-size:11px;color:var(--muted2)">HTML email reminder · Gmail / SendGrid / Mailtrap</div></div>
+    </div>
+  </div>`;
+}
+
+// ════════════════════════════════════════════════════
+//  REMINDERS / TOAST
+// ════════════════════════════════════════════════════
+function toast(msg,color='#22c55e'){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.style.borderColor=color+'44';
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),4000);
+}
+
+function doRemind(id,title){
+  toast(`⏳ Sending reminder: ${title.slice(0,30)}...`);
+  setTimeout(()=>{
+    const c=CONTRACTS.find(c=>c.id===id);
+    if(c){toast(`✅ SMS → ${c.phone}  |  Email → ${c.email}`,'#22c55e')}
+    else toast('❌ Contract not found','#ef4444');
+  },1200);
+}
+
+function sendBulkReminders(){
+  const exp=ALERTS.slice(0,5);
+  if(exp.length===0){toast('ℹ️ No contracts expiring soon','#3b82f6');return}
+  toast(`⏳ Sending ${exp.length} reminders via SMS & Email...`);
+  setTimeout(()=>toast(`✅ ${exp.length} reminders sent successfully`)  ,1800);
+}
+
+// ════════════════════════════════════════════════════
+//  STATUS BADGE HELPER
+// ════════════════════════════════════════════════════
+function statusBadge(s){
+  const m={'Active':'bg','Pending':'ba','Expired':'br','Draft':'bp','Under Review':'bb','Terminated':'br'};
+  const dot={'Active':'● ','Expired':'✗ '};
+  return `<span class="badge ${m[s]||'bx'}">${dot[s]||''}${s}</span>`;
+}
+
+// ════════════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════════════
+initDashboard();
+</script>
+</body>
+</html>

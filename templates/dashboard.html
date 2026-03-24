@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+{% block title %}Dashboard – CMS Pro{% endblock %}
+{% block page_title %}📊 Executive Dashboard{% endblock %}
+
+{% block content %}
+<!-- KPI Row -->
+<div class="kpi-grid">
+  <div class="kpi-card green">
+    <div class="kpi-label">Total Contracts</div>
+    <div class="kpi-val">{{ stats.total_contracts }}</div>
+    <div class="kpi-sub">{{ stats.active_contracts }} active</div>
+    <div class="kpi-icon">📄</div>
+  </div>
+  <div class="kpi-card blue">
+    <div class="kpi-label">Total Portfolio Value</div>
+    <div class="kpi-val">${{ "{:,.0f}".format(stats.total_value) }}</div>
+    <div class="kpi-sub">Across all contracts</div>
+    <div class="kpi-icon">💰</div>
+  </div>
+  <div class="kpi-card amber">
+    <div class="kpi-label">Expiring Soon</div>
+    <div class="kpi-val">{{ stats.expiring_soon }}</div>
+    <div class="kpi-sub">Within 30 days</div>
+    <div class="kpi-icon">⚠️</div>
+  </div>
+  <div class="kpi-card purple">
+    <div class="kpi-label">Transaction Volume</div>
+    <div class="kpi-val">${{ "{:,.0f}".format(stats.transaction_volume) }}</div>
+    <div class="kpi-sub">{{ stats.total_transactions }} transactions</div>
+    <div class="kpi-icon">💳</div>
+  </div>
+</div>
+
+<!-- Charts Row 1 -->
+<div class="charts-row">
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Transaction Timeline</div>
+        <div class="card-sub">Daily volume — last 30 days</div>
+      </div>
+      <span class="badge badge-green">Live</span>
+    </div>
+    <canvas id="txTimeline"></canvas>
+  </div>
+  <div class="card">
+    <div class="card-header">
+      <div><div class="card-title">Contract Status</div><div class="card-sub">Distribution</div></div>
+    </div>
+    <canvas id="statusDist"></canvas>
+  </div>
+</div>
+
+<!-- Charts Row 2 -->
+<div class="charts-row-3">
+  <div class="card">
+    <div class="card-header">
+      <div><div class="card-title">Monthly Contract Value</div><div class="card-sub">Last 12 months</div></div>
+    </div>
+    <canvas id="monthlyVal"></canvas>
+  </div>
+  <div class="card">
+    <div class="card-header">
+      <div><div class="card-title">Category Breakdown</div><div class="card-sub">By portfolio value</div></div>
+    </div>
+    <canvas id="categoryChart"></canvas>
+  </div>
+  <div class="card">
+    <div class="card-header">
+      <div><div class="card-title">Transaction Types</div><div class="card-sub">Completed vs Pending</div></div>
+    </div>
+    <canvas id="txTypes"></canvas>
+  </div>
+</div>
+
+<!-- Recent Contracts + Alerts -->
+<div class="charts-row">
+  <div class="card">
+    <div class="card-header">
+      <div><div class="card-title">Recent Contracts</div></div>
+      <a href="/contracts" class="btn btn-ghost btn-sm">View All →</a>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>ID</th><th>Title</th><th>Vendor</th><th>Value</th><th>Status</th><th>Expires</th>
+        </tr></thead>
+        <tbody>
+        {% for c in contracts %}
+        <tr>
+          <td><code style="font-size:11px;color:var(--blue)">{{ c.id }}</code></td>
+          <td style="font-weight:500;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ c.title }}</td>
+          <td style="color:var(--muted)">{{ c.vendor }}</td>
+          <td>${{ "{:,.0f}".format(c.value) }}</td>
+          <td>
+            {% if c.status == 'Active' %}<span class="badge badge-green">● Active</span>
+            {% elif c.status == 'Expired' %}<span class="badge badge-red">Expired</span>
+            {% elif c.status == 'Pending' %}<span class="badge badge-amber">Pending</span>
+            {% elif c.status == 'Under Review' %}<span class="badge badge-blue">Under Review</span>
+            {% else %}<span class="badge badge-gray">{{ c.status }}</span>{% endif %}
+          </td>
+          <td style="{% if c.days_remaining and c.days_remaining <= 14 %}color:var(--red);font-weight:600{% endif %}">
+            {{ c.end_date }}{% if c.days_remaining and c.days_remaining >= 0 %} <small style="color:var(--muted)">({{ c.days_remaining }}d)</small>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div><div class="card-title">🔔 Active Alerts</div><div class="card-sub">Requires attention</div></div>
+      <a href="/reminders" class="btn btn-ghost btn-sm">All →</a>
+    </div>
+    <div class="alert-list">
+      {% for a in alerts %}
+      <div class="alert-item">
+        <div class="alert-dot {{ a.severity|lower }}"></div>
+        <div class="alert-info">
+          <div class="alert-title">{{ a.contract_title }}</div>
+          <div class="alert-meta">{{ a.type }} · {{ a.days_remaining }}d remaining · {{ a.vendor }}</div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="sendReminder('{{ a.contract_id }}','{{ a.contract_title }}')">📨</button>
+      </div>
+      {% else %}
+      <div style="padding:32px;text-align:center;color:var(--muted)">
+        <div style="font-size:32px;margin-bottom:8px">✅</div>
+        No active alerts
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+fetch('/api/transactions/timeline').then(r=>r.json()).then(data => {
+  new Chart(document.getElementById('txTimeline'),{
+    type:'line',
+    data:{
+      labels: data.map(d=>d.date.slice(5)),
+      datasets:[{
+        label:'Daily Volume ($)',
+        data: data.map(d=>d.amount),
+        borderColor:'#2563eb',
+        backgroundColor:'rgba(37,99,235,.08)',
+        fill:true, tension:.4, pointRadius:2, borderWidth:2
+      }]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{y:{ticks:{callback:v=>'$'+Intl.NumberFormat('en',{notation:'compact'}).format(v),font:{size:10}},grid:{color:'#f0f0f0'}},
+              x:{ticks:{font:{size:10}},grid:{display:false}}}}
+  });
+});
+
+fetch('/api/contracts/status-distribution').then(r=>r.json()).then(data => {
+  const colors = {'Active':'#16a34a','Pending':'#d97706','Expired':'#dc2626','Terminated':'#6b7280','Draft':'#8b5cf6','Under Review':'#2563eb'};
+  new Chart(document.getElementById('statusDist'),{
+    type:'doughnut',
+    data:{
+      labels:Object.keys(data),
+      datasets:[{data:Object.values(data),backgroundColor:Object.keys(data).map(k=>colors[k]||'#94a3b8'),borderWidth:2,borderColor:'#fff'}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'bottom',labels:{font:{size:11},boxWidth:10,padding:8}}}}
+  });
+});
+
+fetch('/api/contracts/monthly-value').then(r=>r.json()).then(data => {
+  new Chart(document.getElementById('monthlyVal'),{
+    type:'bar',
+    data:{
+      labels:Object.keys(data).map(k=>k.slice(0,7)),
+      datasets:[{label:'Value ($)',data:Object.values(data),backgroundColor:'rgba(37,99,235,.7)',borderRadius:4}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{y:{ticks:{callback:v=>'$'+Intl.NumberFormat('en',{notation:'compact'}).format(v),font:{size:10}},grid:{color:'#f0f0f0'}},
+              x:{ticks:{font:{size:10},maxRotation:45},grid:{display:false}}}}
+  });
+});
+
+fetch('/api/stats').then(r=>r.json()).then(d => {
+  const cat = d.by_category;
+  new Chart(document.getElementById('categoryChart'),{
+    type:'bar',
+    data:{
+      labels:Object.keys(cat),
+      datasets:[{label:'Value ($)',data:Object.values(cat),backgroundColor:'rgba(124,58,237,.7)',borderRadius:3}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false}},
+      scales:{x:{ticks:{callback:v=>'$'+Intl.NumberFormat('en',{notation:'compact'}).format(v),font:{size:9}},grid:{color:'#f0f0f0'}},
+              y:{ticks:{font:{size:10}},grid:{display:false}}}}
+  });
+
+  new Chart(document.getElementById('txTypes'),{
+    type:'doughnut',
+    data:{
+      labels:['Completed','Pending','Failed','Processing'],
+      datasets:[{data:[d.completed_tx, d.pending_tx, Math.round(d.total_transactions*.05), Math.round(d.total_transactions*.1)],
+        backgroundColor:['#16a34a','#d97706','#dc2626','#2563eb'],borderWidth:2,borderColor:'#fff'}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'bottom',labels:{font:{size:11},boxWidth:10}}}}
+  });
+});
+</script>
+{% endblock %}

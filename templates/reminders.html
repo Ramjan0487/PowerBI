@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Reminders – CMS Pro{% endblock %}
+{% block page_title %}🔔 Expiry Reminders{% endblock %}
+{% block content %}
+
+<div style="background:linear-gradient(135deg,#fef3c7,#fef9c3);border:1px solid #fcd34d;border-radius:12px;padding:16px 20px;margin-bottom:24px;display:flex;align-items:center;gap:14px">
+  <span style="font-size:24px">⚠️</span>
+  <div>
+    <div style="font-weight:700;font-family:'Syne',sans-serif;color:#92400e">{{ expiring|length }} Contracts Expiring Within 30 Days</div>
+    <div style="font-size:13px;color:#b45309;margin-top:2px">Send SMS and Email reminders to contract owners and vendors.</div>
+  </div>
+  <button class="btn btn-green" style="margin-left:auto" onclick="sendBulkReminders()">📨 Send All Reminders</button>
+</div>
+
+<div class="card" style="margin-bottom:24px">
+  <div class="card-header">
+    <div><div class="card-title">Expiring Contracts</div><div class="card-sub">Sorted by urgency</div></div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th>ID</th><th>Title</th><th>Vendor</th><th>Owner</th>
+        <th>Phone</th><th>Email</th><th>Expires</th><th>Days Left</th><th>Value</th><th>Send</th>
+      </tr></thead>
+      <tbody>
+      {% for c in expiring %}
+      <tr>
+        <td><code style="font-size:11px;color:var(--blue)">{{ c.id }}</code></td>
+        <td style="font-weight:600;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ c.title }}</td>
+        <td style="color:var(--muted)">{{ c.vendor }}</td>
+        <td style="color:var(--muted)">{{ c.owner }}</td>
+        <td><code style="font-size:11px">{{ c.phone }}</code></td>
+        <td><code style="font-size:11px">{{ c.email }}</code></td>
+        <td style="font-weight:600;color:var(--red)">{{ c.end_date }}</td>
+        <td>
+          {% if c.days_remaining <= 7 %}<span class="badge badge-red">🔴 {{ c.days_remaining }}d</span>
+          {% elif c.days_remaining <= 14 %}<span class="badge badge-amber">🟠 {{ c.days_remaining }}d</span>
+          {% else %}<span class="badge badge-amber">🟡 {{ c.days_remaining }}d</span>
+          {% endif %}
+        </td>
+        <td style="font-weight:600">${{ "{:,.0f}".format(c.value) }}</td>
+        <td>
+          <button class="btn btn-green btn-sm" onclick="sendReminder('{{ c.id }}','{{ c.title }}')">
+            📨 Remind
+          </button>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="10" style="text-align:center;padding:40px;color:var(--muted)">✅ No contracts expiring soon</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div><div class="card-title">All Active Alerts</div></div>
+  </div>
+  <div class="alert-list">
+    {% for a in alerts %}
+    <div class="alert-item">
+      <div class="alert-dot {{ a.severity|lower }}"></div>
+      <div class="alert-info">
+        <div class="alert-title">{{ a.type }} — {{ a.contract_title }}</div>
+        <div class="alert-meta">{{ a.vendor }} · {{ a.days_remaining }}d remaining · {{ a.severity }} severity · {{ a.email }} · {{ a.phone }}</div>
+      </div>
+      <span class="badge {% if a.severity == 'Critical' %}badge-red{% elif a.severity == 'High' %}badge-amber{% else %}badge-blue{% endif %}">{{ a.severity }}</span>
+      <button class="btn btn-ghost btn-sm" onclick="sendReminder('{{ a.contract_id }}','{{ a.contract_title }}')">📨 Send</button>
+    </div>
+    {% else %}
+    <div style="padding:32px;text-align:center;color:var(--muted)">No active alerts</div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

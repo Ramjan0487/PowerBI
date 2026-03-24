@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Transactions – CMS Pro{% endblock %}
+{% block page_title %}💳 Transactions{% endblock %}
+{% block content %}
+
+<div class="kpi-grid" style="grid-template-columns:repeat(4,1fr)">
+  {% set completed = transactions|selectattr('status','equalto','Completed')|list %}
+  {% set pending   = transactions|selectattr('status','equalto','Pending')|list %}
+  {% set failed    = transactions|selectattr('status','equalto','Failed')|list %}
+  <div class="kpi-card green">
+    <div class="kpi-label">Completed</div>
+    <div class="kpi-val">{{ completed|length }}</div>
+    <div class="kpi-sub">${{ "{:,.0f}".format(completed|sum(attribute='amount')) }}</div>
+    <div class="kpi-icon">✅</div>
+  </div>
+  <div class="kpi-card amber">
+    <div class="kpi-label">Pending</div>
+    <div class="kpi-val">{{ pending|length }}</div>
+    <div class="kpi-sub">${{ "{:,.0f}".format(pending|sum(attribute='amount')) }}</div>
+    <div class="kpi-icon">⏳</div>
+  </div>
+  <div class="kpi-card red">
+    <div class="kpi-label">Failed</div>
+    <div class="kpi-val">{{ failed|length }}</div>
+    <div class="kpi-sub">${{ "{:,.0f}".format(failed|sum(attribute='amount')) }}</div>
+    <div class="kpi-icon">❌</div>
+  </div>
+  <div class="kpi-card blue">
+    <div class="kpi-label">Total Volume</div>
+    <div class="kpi-val">${{ "{:,.0f}".format(transactions|sum(attribute='amount')) }}</div>
+    <div class="kpi-sub">{{ transactions|length }} transactions</div>
+    <div class="kpi-icon">💳</div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div><div class="card-title">Transaction Ledger</div><div class="card-sub">Most recent first</div></div>
+    <button class="btn btn-ghost btn-sm">⬇ Export CSV</button>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th>TX ID</th><th>Contract</th><th>Type</th><th>Amount</th>
+        <th>Status</th><th>Vendor</th><th>Reference</th><th>Date</th>
+      </tr></thead>
+      <tbody>
+      {% for t in transactions %}
+      <tr>
+        <td><code style="font-size:11px;color:var(--purple)">{{ t.id }}</code></td>
+        <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500" title="{{ t.contract_title }}">{{ t.contract_title }}</td>
+        <td><span class="badge badge-blue">{{ t.type }}</span></td>
+        <td style="font-weight:600;color:var(--ink)">${{ "{:,.2f}".format(t.amount) }}</td>
+        <td>
+          {% if t.status == 'Completed' %}<span class="badge badge-green">✓ Completed</span>
+          {% elif t.status == 'Pending' %}<span class="badge badge-amber">⏳ Pending</span>
+          {% elif t.status == 'Failed' %}<span class="badge badge-red">✗ Failed</span>
+          {% elif t.status == 'Processing' %}<span class="badge badge-blue">Processing</span>
+          {% else %}<span class="badge badge-gray">{{ t.status }}</span>{% endif %}
+        </td>
+        <td style="color:var(--muted)">{{ t.vendor }}</td>
+        <td><code style="font-size:11px">{{ t.reference }}</code></td>
+        <td style="color:var(--muted);white-space:nowrap">{{ t.date[:16] }}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

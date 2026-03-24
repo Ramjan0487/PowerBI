@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}Contract Management System{% endblock %}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root {
+  --ink:      #0d0f14;
+  --ink2:     #2a2d38;
+  --muted:    #6b7080;
+  --surface:  #ffffff;
+  --bg:       #f2f3f7;
+  --border:   #e4e6ef;
+  --green:    #16a34a;
+  --green2:   #dcfce7;
+  --amber:    #d97706;
+  --amber2:   #fef3c7;
+  --red:      #dc2626;
+  --red2:     #fee2e2;
+  --blue:     #2563eb;
+  --blue2:    #dbeafe;
+  --purple:   #7c3aed;
+  --purple2:  #ede9fe;
+  --accent:   #0d6efd;
+  --nav-w:    240px;
+  --r:        12px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.6;
+  display: flex;
+  min-height: 100vh;
+}
+/* ── SIDEBAR ── */
+.sidebar {
+  width: var(--nav-w);
+  background: var(--ink);
+  color: #fff;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  z-index: 100;
+  overflow-y: auto;
+}
+.sidebar-logo {
+  padding: 24px 20px 16px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+.sidebar-logo .brand {
+  font-family: 'Syne', sans-serif;
+  font-size: 17px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -.3px;
+  line-height: 1.2;
+}
+.sidebar-logo .sub {
+  font-size: 11px;
+  color: rgba(255,255,255,.4);
+  margin-top: 2px;
+}
+.sidebar-logo .dot {
+  display: inline-block;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+  margin-right: 6px;
+  animation: pulse 2s infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+nav { flex: 1; padding: 16px 0; }
+.nav-section {
+  font-size: 10px;
+  color: rgba(255,255,255,.25);
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  padding: 12px 20px 6px;
+  font-weight: 600;
+}
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 20px;
+  color: rgba(255,255,255,.55);
+  text-decoration: none;
+  font-size: 13.5px;
+  font-weight: 400;
+  transition: all .15s;
+  border-left: 3px solid transparent;
+}
+.nav-link:hover { color: #fff; background: rgba(255,255,255,.06); }
+.nav-link.active {
+  color: #fff;
+  background: rgba(255,255,255,.1);
+  border-left-color: var(--green);
+  font-weight: 500;
+}
+.nav-link .icon { font-size: 16px; width: 20px; text-align: center; }
+.nav-badge {
+  margin-left: auto;
+  background: var(--red);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 10px;
+}
+.sidebar-footer {
+  padding: 16px 20px;
+  border-top: 1px solid rgba(255,255,255,.08);
+  font-size: 12px;
+  color: rgba(255,255,255,.3);
+}
+/* ── MAIN ── */
+.main {
+  margin-left: var(--nav-w);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+.topbar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+.topbar-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.topbar-right { display: flex; align-items: center; gap: 12px; }
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: all .15s;
+  text-decoration: none;
+  font-family: 'DM Sans', sans-serif;
+}
+.btn-primary { background: var(--ink); color: #fff; }
+.btn-primary:hover { background: var(--ink2); }
+.btn-green { background: var(--green); color: #fff; }
+.btn-green:hover { background: #15803d; }
+.btn-ghost { background: transparent; color: var(--ink2); border: 1px solid var(--border); }
+.btn-ghost:hover { background: var(--bg); }
+.btn-sm { padding: 5px 11px; font-size: 12px; }
+/* ── PAGE CONTENT ── */
+.page { padding: 28px; flex: 1; }
+/* ── KPI GRID ── */
+.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+.kpi-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+  transition: transform .2s;
+}
+.kpi-card:hover { transform: translateY(-2px); }
+.kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+}
+.kpi-card.green::before { background: var(--green); }
+.kpi-card.amber::before { background: var(--amber); }
+.kpi-card.red::before   { background: var(--red); }
+.kpi-card.blue::before  { background: var(--blue); }
+.kpi-card.purple::before{ background: var(--purple); }
+.kpi-label { font-size: 12px; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
+.kpi-val { font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 700; color: var(--ink); line-height: 1; }
+.kpi-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.kpi-icon { position: absolute; right: 16px; top: 16px; font-size: 28px; opacity: .12; }
+/* ── CHARTS ROW ── */
+.charts-row { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 24px; }
+.charts-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 20px;
+}
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.card-title { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; color: var(--ink); }
+.card-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+canvas { max-height: 240px; }
+/* ── TABLE ── */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead tr { border-bottom: 2px solid var(--border); }
+th { padding: 10px 14px; text-align: left; font-weight: 600; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .5px; white-space: nowrap; }
+td { padding: 12px 14px; border-bottom: 1px solid var(--border); color: var(--ink2); vertical-align: middle; }
+tbody tr:hover td { background: var(--bg); }
+tbody tr:last-child td { border-bottom: none; }
+/* ── BADGES ── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .2px;
+}
+.badge-green  { background: var(--green2);  color: #15803d; }
+.badge-amber  { background: var(--amber2);  color: #92400e; }
+.badge-red    { background: var(--red2);    color: #991b1b; }
+.badge-blue   { background: var(--blue2);   color: #1e40af; }
+.badge-purple { background: var(--purple2); color: #5b21b6; }
+.badge-gray   { background: #f3f4f6;        color: #374151; }
+/* ── ALERTS ── */
+.alert-list { display: flex; flex-direction: column; gap: 10px; }
+.alert-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+.alert-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.alert-dot.critical { background: var(--red); animation: pulse 1.5s infinite; }
+.alert-dot.high     { background: var(--amber); }
+.alert-dot.medium   { background: #f59e0b; }
+.alert-info { flex: 1; }
+.alert-title { font-weight: 600; font-size: 13px; color: var(--ink); }
+.alert-meta  { font-size: 12px; color: var(--muted); margin-top: 2px; }
+/* ── TOAST ── */
+#toast {
+  position: fixed; bottom: 24px; right: 24px;
+  background: var(--ink); color: #fff;
+  padding: 12px 20px; border-radius: 10px;
+  font-size: 13px; font-weight: 500;
+  transform: translateY(80px); opacity: 0;
+  transition: all .3s; z-index: 9999;
+  max-width: 360px;
+}
+#toast.show { transform: translateY(0); opacity: 1; }
+</style>
+{% block extra_head %}{% endblock %}
+</head>
+<body>
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="brand"><span class="dot"></span>CMS Pro</div>
+    <div class="sub">Contract Management System</div>
+  </div>
+  <nav>
+    <div class="nav-section">Main</div>
+    <a href="/dashboard" class="nav-link {% if request.path == '/dashboard' %}active{% endif %}">
+      <span class="icon">◈</span> Dashboard
+    </a>
+    <a href="/contracts" class="nav-link {% if '/contracts' in request.path %}active{% endif %}">
+      <span class="icon">📄</span> Contracts
+    </a>
+    <a href="/transactions" class="nav-link {% if '/transactions' in request.path %}active{% endif %}">
+      <span class="icon">💳</span> Transactions
+    </a>
+    <div class="nav-section">Alerts</div>
+    <a href="/reminders" class="nav-link {% if '/reminders' in request.path %}active{% endif %}">
+      <span class="icon">🔔</span> Reminders
+      {% if alerts %}<span class="nav-badge">{{ alerts|length }}</span>{% endif %}
+    </a>
+    <div class="nav-section">QA</div>
+    <a href="/test-cases" class="nav-link {% if '/test-cases' in request.path %}active{% endif %}">
+      <span class="icon">🧪</span> Test Cases
+    </a>
+  </nav>
+  <div class="sidebar-footer">v2.1 · Flask + Power BI</div>
+</aside>
+
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-title">{% block page_title %}Dashboard{% endblock %}</div>
+    <div class="topbar-right">
+      <span style="font-size:12px;color:var(--muted)">{{ now }}</span>
+      <button class="btn btn-green btn-sm" onclick="sendBulkReminders()">🔔 Send Reminders</button>
+    </div>
+  </div>
+  <div class="page">
+    {% block content %}{% endblock %}
+  </div>
+</main>
+
+<div id="toast"></div>
+
+<script>
+const now = new Date().toLocaleString('en-RW',{dateStyle:'medium',timeStyle:'short'});
+function toast(msg, color='#16a34a') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = color;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 4000);
+}
+function sendBulkReminders() {
+  toast('⏳ Sending reminders...');
+  fetch('/api/send-bulk-reminders', {method:'POST'})
+    .then(r => r.json())
+    .then(d => toast(`✅ Sent ${d.sent} reminder(s) via SMS & Email`))
+    .catch(() => toast('❌ Error sending reminders', '#dc2626'));
+}
+function sendReminder(id, title) {
+  toast(`⏳ Sending reminder for ${title}...`);
+  fetch(`/api/send-reminder/${id}`, {method:'POST'})
+    .then(r => r.json())
+    .then(d => toast(`✅ Reminder sent: ${d.message}`))
+    .catch(() => toast('❌ Error', '#dc2626'));
+}
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

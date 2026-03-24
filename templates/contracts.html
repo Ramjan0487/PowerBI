@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Contracts – CMS Pro{% endblock %}
+{% block page_title %}📄 Contracts{% endblock %}
+{% block content %}
+
+<div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap">
+  {% for s in ['all','Active','Pending','Expired','Draft','Under Review','Terminated'] %}
+  <a href="/contracts?status={{ s }}"
+     class="btn {% if status_filter == s %}btn-primary{% else %}btn-ghost{% endif %} btn-sm">
+    {{ s.title() }}
+  </a>
+  {% endfor %}
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="card-title">All Contracts</div>
+      <div class="card-sub">{{ contracts|length }} records shown</div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-ghost btn-sm">⬇ Export</button>
+      <button class="btn btn-green btn-sm">+ New Contract</button>
+    </div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th>ID</th><th>Title</th><th>Vendor</th><th>Owner</th>
+        <th>Category</th><th>Type</th><th>Value</th>
+        <th>Status</th><th>Start</th><th>End</th><th>Days Left</th><th>Actions</th>
+      </tr></thead>
+      <tbody>
+      {% for c in contracts %}
+      <tr>
+        <td><code style="font-size:11px;color:var(--blue)">{{ c.id }}</code></td>
+        <td style="font-weight:500;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="{{ c.title }}">{{ c.title }}</td>
+        <td style="color:var(--muted);white-space:nowrap">{{ c.vendor }}</td>
+        <td style="color:var(--muted);white-space:nowrap">{{ c.owner }}</td>
+        <td><span class="badge badge-blue">{{ c.category }}</span></td>
+        <td><span class="badge badge-gray">{{ c.type }}</span></td>
+        <td style="font-weight:600">${{ "{:,.0f}".format(c.value) }}</td>
+        <td>
+          {% if c.status == 'Active' %}<span class="badge badge-green">● Active</span>
+          {% elif c.status == 'Expired' %}<span class="badge badge-red">Expired</span>
+          {% elif c.status == 'Pending' %}<span class="badge badge-amber">Pending</span>
+          {% elif c.status == 'Under Review' %}<span class="badge badge-blue">Under Review</span>
+          {% elif c.status == 'Terminated' %}<span class="badge badge-red">Terminated</span>
+          {% else %}<span class="badge badge-gray">{{ c.status }}</span>{% endif %}
+        </td>
+        <td style="white-space:nowrap;color:var(--muted)">{{ c.start_date }}</td>
+        <td style="white-space:nowrap;{% if c.days_remaining and 0 < c.days_remaining <= 14 %}color:var(--red);font-weight:600{% endif %}">{{ c.end_date }}</td>
+        <td>
+          {% if c.days_remaining is not none %}
+            {% if c.days_remaining < 0 %}<span style="color:var(--muted)">Expired</span>
+            {% elif c.days_remaining <= 7 %}<span style="color:var(--red);font-weight:700">{{ c.days_remaining }}d ⚠</span>
+            {% elif c.days_remaining <= 30 %}<span style="color:var(--amber);font-weight:600">{{ c.days_remaining }}d</span>
+            {% else %}<span style="color:var(--green)">{{ c.days_remaining }}d</span>
+            {% endif %}
+          {% endif %}
+        </td>
+        <td>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-ghost btn-sm" title="View">👁</button>
+            {% if c.days_remaining and 0 < c.days_remaining <= 30 %}
+            <button class="btn btn-ghost btn-sm" onclick="sendReminder('{{ c.id }}','{{ c.title }}')" title="Send Reminder">📨</button>
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
