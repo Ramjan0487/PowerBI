@@ -1,4 +1,4 @@
-# ContractIQ — Contract Management System
+# Contract— Contract Management System
 
 > PowerBI · Flask · AI · SMS/Email Reminders · PKI Certificates · Katalon TestOps
 
