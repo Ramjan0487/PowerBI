@@ -1,118 +1,286 @@
-# Contract— Contract Management System
+# 🚀 AI-Powered PKI & Contract Management System (CMS Pro)
 
-> PowerBI · Flask · AI · SMS/Email Reminders · PKI Certificates · Katalon TestOps
+![Version](https://img.shields.io/badge/version-2.1-green)
+![Backend](https://img.shields.io/badge/backend-Flask-blue)
+![Frontend](https://img.shields.io/badge/frontend-Dashboard_UI-purple)
+![Security](https://img.shields.io/badge/security-Zero_Trust-red)
+![Testing](https://img.shields.io/badge/testing-Katalon_TestOps-orange)
 
 ---
 
-## Quick Start
+## 📌 Overview
+
+The **AI-Powered PKI & Contract Management System (CMS Pro)** is a **full enterprise-grade platform** designed to manage:
+
+* 📄 Digital Contracts
+* 🔐 PKI (Public Key Infrastructure)
+* 💳 Transactions & Payments (MoMo Ready 🇷🇼)
+* 🔔 Automated Notifications (SMS + Email)
+* 📊 Real-time Analytics Dashboard
+* 🧪 QA Automation via Katalon TestOps
+
+This system combines **security, automation, analytics, and AI intelligence** into one unified platform.
+
+---
+
+## 🏗️ System Architecture
+
+```text
+Frontend (Dashboard UI)
+        ↓
+Flask API (Secure Backend)
+        ↓
+PostgreSQL Database
+        ↓
+Services Layer:
+   ├── PKI Engine
+   ├── Contract Engine
+   ├── Notification Engine
+   ├── Transaction Engine
+        ↓
+Integrations:
+   ├── Twilio (SMS)
+   ├── Email (SMTP / SendGrid)
+   ├── MoMo API (MTN Rwanda)
+   ├── Katalon TestOps
+```
+
+---
+
+## ✨ Key Features
+
+### 🔐 Security & PKI
+
+* Public Key Infrastructure (PKI)
+* Digital Signature Validation
+* Zero Trust Architecture
+* JWT Authentication & RBAC
+
+### 📄 Contract Management
+
+* Full lifecycle management
+* Expiry tracking & alerts
+* Vendor & category tracking
+* Auto-renewal workflows
+
+### 💳 Transactions & Payments
+
+* Transaction ledger system
+* MoMo API integration (Rwanda)
+* Financial reporting dashboard
+
+### 🔔 Notification System
+
+* SMS alerts via Twilio
+* Email reminders (Flask-Mail / SMTP)
+* Automated expiry alerts
+
+### 📊 Dashboard & Analytics
+
+* KPI Monitoring
+* Charts (Chart.js)
+* Real-time updates
+* Power BI / GA4 integration ready
+
+### 🧪 QA Automation (Katalon)
+
+* Integrated with Katalon TestOps
+* Automated UI/API testing
+* Test case management (100+ ready)
+* CI/CD testing pipelines
+
+---
+
+## 🧠 AI Capabilities
+
+* Contract Risk Analysis
+* Clause Detection (Penalty, Auto-renew)
+* Smart Alerts & Predictions
+* Future: ML-based contract scoring
+
+---
+
+## 🗄️ Tech Stack
+
+| Layer     | Technology             |
+| --------- | ---------------------- |
+| Frontend  | HTML, CSS, Chart.js    |
+| Backend   | Flask (Python 3.11)    |
+| Database  | PostgreSQL / SQLite    |
+| Auth      | JWT + Bcrypt           |
+| Messaging | Twilio SMS             |
+| Email     | Flask-Mail / SMTP      |
+| Payments  | MTN MoMo API           |
+| Queue     | Celery + Redis         |
+| Testing   | Katalon TestOps        |
+| DevOps    | Docker, Docker Compose |
+
+---
+
+## 📁 Project Structure
 
 ```bash
-git clone https://github.com/Ramjan0487/Contract_Management.git && cd contract-mgmt
-cp .env.example .env          # fill in credentials
-bash scripts/gen_certs.sh     # generate PKI chain
-docker compose up -d          # start all 7 services
-```
-
-| URL | Service |
-|-----|---------|
-| https://localhost/auth/login | Login / Signup / Forgot Password |
-| https://localhost/dashboard/ | PowerBI + live KPI dashboard |
-| https://localhost/contracts/ | Contract CRUD + AI analysis |
-| https://localhost/api/v1/summary | REST API (PowerBI data source) |
-| http://localhost:9090 | Prometheus |
-| http://localhost:3000 | Grafana (admin / cms2024) |
-
----
-
-## Features
-
-### Auth (Login · Signup · Forgot Password)
-- Email + bcrypt password, 5-attempt lockout
-- mTLS client certificate (Nginx → Flask header verification)
-- Email verification on signup, 2-hour reset token
-
-### Contract Management
-- Full CRUD: create, view, edit, archive contracts
-- File upload (PDF/DOCX) with SHA-256 integrity hash
-- AI analysis triggered on create: risk score, missing clauses, anomalies
-
-### AI Detection (OpenCV + rule-based + optional OpenAI)
-- Detects: termination, payment, liability, governing law, force majeure, GDPR, auto-renewal, penalty clauses
-- Risk scoring: LOW / MEDIUM / HIGH / CRITICAL
-- Enrichment via GPT-4o-mini when `OPENAI_API_KEY` is set
-
-### Weekly Friday SMS + Email Reminders
-- Celery Beat runs every Friday 08:00 Africa/Kigali
-- Reviews ALL active contracts expiring within 90 days
-- Groups by owner → sends digest email + SMS per owner
-- Individual reminders at 90, 60, 30, 14, 7, 1 day(s) before expiry
-- SMS via Twilio, Email via Flask-Mail (SMTP)
-
-### PowerBI Integration
-- REST API at `/api/v1/` returns summary, contracts list, expiring feed, reminders, audit log
-- PowerBI embed token generated server-side via Azure AD
-- Dashboard auto-refreshes KPIs every 15 seconds
-
-### Digital Certificates (PKI)
-- Full CA chain generation: `scripts/gen_certs.sh`
-- Issue per-contract signing certificates
-- Verify and revoke via `/certs/` endpoints
-- mTLS: Nginx verifies client cert, forwards DN/serial to Flask
-
-### Katalon TestOps
-- 3 test cases: TC001 login, TC002 Friday reminder, TC003 AI detection
-- Full test suite XML for Katalon Studio
-- CI runs Katalon via Docker on push to main
-
----
-
-## 3 Test Cases
-
-| ID | Name | What it tests |
-|----|------|--------------|
-| TC001 | User Login with Valid Credentials | Signup → login → dashboard KPIs → logout → auth guard |
-| TC002 | Weekly Friday SMS + Email Reminder | Contract created → digest triggered → reminder records verified → audit log checked |
-| TC003 | AI Contract Detection + Digital Certificate | High-risk contract → AI analysis → risk=HIGH/CRITICAL → missing clauses → cert issued |
-
----
-
-## Folder Structure
-
-```
-contract-mgmt/
+cms-enterprise/
+│
 ├── app/
-│   ├── __init__.py              # App factory + Prometheus metrics
-│   ├── config.py                # Dev/Prod/Test configs
-│   ├── models/__init__.py       # User, Contract, Reminder, AIAnalysis, DigitalCertificate, AuditLog
 │   ├── routes/
-│   │   ├── auth.py              # Signup, login (mTLS+pw), forgot/reset password, verify email
-│   │   ├── contracts.py         # CRUD, file upload, AI trigger, download
-│   │   ├── dashboard.py         # KPI API, PowerBI token, activity feed
-│   │   ├── api.py               # REST API v1 (PowerBI data source)
-│   │   └── certs.py             # Issue, verify, revoke PKI certificates
+│   ├── models/
 │   ├── services/
-│   │   ├── ai/contract_analyzer.py          # Rule+OpenAI risk analysis
-│   │   ├── notifications/notification_service.py  # Celery: weekly digest + reminders
-│   │   └── certificates/cert_service.py     # cryptography PKI
-│   ├── templates/
-│   │   ├── auth/        login.html, signup.html, forgot_password.html, reset_password.html
-│   │   ├── contracts/   list.html, form.html, detail.html
-│   │   ├── dashboard/   index.html, nav.html
-│   │   └── emails/      expiry_reminder.html, weekly_digest.html, verify_email.html, password_reset.html
-│   └── static/
-│       ├── css/  auth.css, main.css
-│       └── js/   auth.js, dashboard.js
-├── katalon/
-│   ├── test_suites/CMS_Full_TestSuite.ts
-│   └── test_cases/  TC001, TC002, TC003 (.groovy)
-├── certs/           Generated by scripts/gen_certs.sh
-├── nginx/nginx.conf
-├── scripts/gen_certs.sh
-├── ci/prometheus.yml
-├── .github/workflows/ci.yml   # lint → test → Katalon → security → Docker → deploy
-├── docker-compose.yml         # 7 services
-├── Dockerfile                 # multi-stage
+│   ├── tasks/
+│
+├── frontend/
+│   └── CMS_Dashboard.html
+│
+├── config.py
+├── app.py
 ├── requirements.txt
-├── wsgi.py
-└── .env.example
+├── docker-compose.yml
+└── README.md
 ```
+
+---
+
+## ⚙️ Installation & Setup
+
+### 1️⃣ Clone Repository
+
+```bash
+git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git
+cd cms-enterprise
+```
+
+### 2️⃣ Install Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### 3️⃣ Run Application
+
+```bash
+python app.py
+```
+
+### 4️⃣ Run Celery Worker
+
+```bash
+celery -A tasks.reminder worker --loglevel=info
+```
+
+---
+
+## 🐳 Docker Deployment
+
+```bash
+docker-compose up --build
+```
+
+---
+
+## 🔐 Authentication API
+
+### Login
+
+```bash
+POST /api/auth/login
+```
+
+### Signup
+
+```bash
+POST /api/auth/signup
+```
+
+---
+
+## 📡 API Endpoints
+
+| Endpoint          | Method | Description       |
+| ----------------- | ------ | ----------------- |
+| /api/contracts    | GET    | Get all contracts |
+| /api/contracts    | POST   | Create contract   |
+| /api/auth/login   | POST   | Login             |
+| /api/auth/signup  | POST   | Register          |
+| /api/transactions | GET    | Get transactions  |
+
+---
+
+## 📩 Notification Flow
+
+```text
+Contract Expiry → Alert Engine → SMS (Twilio) + Email → User Notification
+```
+
+---
+
+## 🧪 Testing (Katalon TestOps)
+
+* Automated test suites
+* API testing
+* UI testing
+* CI/CD integration
+
+---
+
+## 🔐 Security Best Practices
+
+* HTTPS enforcement
+* JWT token expiration
+* Input validation
+* SQL Injection protection
+* Role-Based Access Control
+
+---
+
+## 🌍 Deployment Options
+
+* ☁️ AWS (EC2 / RDS)
+* 🚀 Render
+* ⚡ Railway
+* 🟦 Azure
+
+---
+
+## 📈 Future Enhancements
+
+* AI Contract Scoring Engine
+* Blockchain-based PKI
+* Multi-tenant SaaS model
+* Mobile App (Flutter)
+
+---
+
+## 👨‍💻 Author
+
+**Ntambara Rukaka Steven**
+Software Engineer | QA Engineer | Systems Architect
+
+---
+
+## 📜 License
+
+MIT License
+
+---
+
+## ⭐ Support
+
+If you like this project:
+
+* ⭐ Star the repository
+* 🍴 Fork it
+* 🧪 Contribute test cases
+* 🚀 Deploy your own version
+
+---
+
+## 🎯 Final Note
+
+This system is designed for:
+
+* Governments (e.g., Rwanda 🇷🇼)
+* Enterprises
+* Financial institutions
+* Legal firms
+
+**A complete digital transformation platform for contracts, security, and analytics.**
